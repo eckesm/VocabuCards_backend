@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+<!-- title -->
+{% block title %}New Word{% endblock %}
+
+<!-- page content -->
+{% block content %}
+
+<div class="container d-flex justify-content-center my-5">
+  
+  <!-- new word form -->
+  <div class="row col-12 col-sm-10 col-md-8 col-lg-6 border border-1 border-light rounded shadow-lg p-3 mt-3 mb-3">
+
+    <input type="hidden" id="last_language" value="{{ g.user.last_language }}">
+
+    <form id="login_form" action="/words/new" method="POST">
+        
+      {% include '_vocab_word_form.html' %}
+
+    </form>
+
+  </div>
+</div>
+
+{% endblock %}
+
+<!-- scripts -->
+{% block page_scripts %}
+<script src="/static/new_vocab_word_form.js"></script>
+{% endblock %}

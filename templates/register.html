@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+<!-- title -->
+{% block title %}New User{% endblock %}
+
+<!-- page content -->
+{% block content %}
+
+<div class="container d-flex justify-content-center my-5">
+  
+  <!-- new user form -->
+  <div class="row col-12 col-sm-10 col-md-8 col-lg-6 border border-1 border-light rounded shadow-lg p-3 mt-3 mb-3">
+
+    <form method="POST">
+      <div class="row align-items-top justify-content-center">
+      
+        <!-- CSRF Token -->
+        {{ form.hidden_tag() }}
+        
+        <p class="display-5 ">Register New User</p>
+
+        <!-- name -->
+        <div class="form-floating mt-1 mb-1">
+        
+          {{form.name(class_='form-control', placeholder='Name')}}
+          {{form.name.label}}
+  
+          {% for err in form.name.errors %}
+          <span class="badge rounded-pill bg-danger me-1 text-wrap">{{err}}</span>
+          {% endfor %}
+    
+        </div>
+        
+        <!-- email address -->
+        <div class="form-floating mt-1 mb-1">
+    
+          {{form.email_address(class_='form-control', placeholder='Email address')}}
+          <label for="{{form.email_address.label.field_id}}" class="">{{form.email_address.label.text}}
+          <span id="email_address_available" class="badge"></span>
+          </label>
+          <div class="form-text"></div>
+  
+          {% for err in form.email_address.errors %}
+          <span class="badge rounded-pill bg-danger me-1 text-wrap">{{err}}</span>
+          {% endfor %}
+    
+        </div>
+      
+        <!-- password -->
+        <div class="form-floating mt-1 mb-1">
+        
+          {{form.password(class_='form-control', placeholder='Password')}}
+          {{form.password.label}}
+          <div id="password_help" class="form-text">Between 8 and 40 characters.</div>
+          
+          {% for err in form.password.errors %}
+          <span class="badge rounded-pill bg-danger me-1 text-wrap">{{err}}</span>
+          {% endfor %}
+        
+        </div>
+        
+        <!-- submit button -->
+        <div class="col-auto">
+            <button type="submit" id="register_button" class="btn btn-primary col-12">Register</button>
+        </div>
+      
+      </div>
+    </form>
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block page_scripts %}
+
+{% endblock %}

@@ -1,0 +1,100 @@
+<div class="row justify-content-around">
+
+  <!-- CSRF Token -->
+  {{ vocab_word_form.hidden_tag() }}
+
+  <!-- language -->
+  <div class="form-floating mt-1 mb-1">
+
+    {{vocab_word_form.source_code(class_="form-control", placeholder="Language")}}
+    {{vocab_word_form.source_code.label(class_="form-label")}}
+    
+    
+    {% for err in vocab_word_form.source_code.errors %}
+    <span class="badge rounded-pill bg-danger me-1 text-wrap">{{err}}</span>
+    {% endfor %}
+      
+  </div>
+
+  <!-- root -->
+  <div class="input-group mt-1 mb-1">
+    
+    <span class="input-group-text">{{vocab_word_form.root.label.text}}</span>
+    {{vocab_word_form.root(class_="form-control", placeholder="", autocapitalize="off")}}
+
+    {% for err in vocab_word_form.root.errors %}
+    <span class="badge rounded-pill bg-danger me-1 text-wrap">{{err}}</span>
+    {% endfor %}
+  
+  </div>
+
+  <!-- translation -->
+  <div class="input-group mt-1 mb-1">
+    
+    <span class="input-group-text">{{vocab_word_form.translation.label.text}}</span>
+    {{vocab_word_form.translation(class_="form-control", placeholder="", autocapitalize="off")}}
+
+    {% for err in vocab_word_form.translation.errors %}
+    <span class="badge rounded-pill bg-danger me-1 text-wrap">{{err}}</span>
+    {% endfor %}
+  
+  </div>
+
+  <!-- definition -->
+  <div class="input-group mt-1 mb-1">
+  
+    <span class="input-group-text">{{vocab_word_form.definition.label.text}}</span>
+    {{vocab_word_form.definition(class_="form-control", placeholder="", autocapitalize="off")}}
+
+    {% for err in vocab_word_form.definition.errors %}
+    <span class="badge rounded-pill bg-danger me-1 text-wrap">{{err}}</span>
+    {% endfor %}
+  
+  </div>
+
+  <!-- synonyms -->
+  <div class="input-group mt-1 mb-1">
+  
+    <span class="input-group-text">{{vocab_word_form.synonyms.label.text}}</span>
+    {{vocab_word_form.synonyms(class_="form-control", placeholder="", autocapitalize="off")}}
+
+    {% for err in vocab_word_form.synonyms.errors %}
+    <span class="badge rounded-pill bg-danger me-1 text-wrap">{{err}}</span>
+    {% endfor %}
+  
+  </div>
+  
+  <!-- examples -->
+  <div class="input-group mt-1 mb-1">
+    
+    <span class="input-group-text">{{vocab_word_form.examples.label.text}}</span>
+    {{vocab_word_form.examples(class_="form-control", placeholder="")}}
+
+    {% for err in vocab_word_form.examples.errors %}
+    <span class="badge rounded-pill bg-danger me-1 text-wrap">{{err}}</span>
+    {% endfor %}
+  
+  </div>
+
+  
+  <!-- notes -->
+  <div class="input-group mt-1 mb-1">
+    
+    <span class="input-group-text">{{vocab_word_form.notes.label.text}}</span>
+    {{vocab_word_form.notes(class_="form-control", placeholder="")}}
+
+    {% for err in vocab_word_form.notes.errors %}
+    <span class="badge rounded-pill bg-danger me-1 text-wrap">{{err}}</span>
+    {% endfor %}
+  
+  </div>
+  
+  <!-- form buttons -->
+  <div>
+    <div class="form-text">* required</div>
+    <div class="d-flex justify-content-around">
+      <button type="submit" class="btn btn-primary btn">Submit</button>
+    </div>  
+  </div>
+
+</div>
