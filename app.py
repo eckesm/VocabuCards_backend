@@ -10,15 +10,21 @@ import json
 import os
 # import jwt
 from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required, JWTManager
+from secret import SECRET_KEY, JWT_SECRET_KEY, SQLALCHEMY_DATABASE_URI, GOOGLE_LANGUAGE_KEY, WORDS_API_KEY
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
-    'DATABASE_URL')
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
+# app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
+app.config['SQLALCHEMY_DATABASE_URI'] = SQLALCHEMY_DATABASE_URI
+# app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
+app.config['SECRET_KEY'] = SECRET_KEY
 app.config['SQLALCHEMY_ECHO'] = False
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
-app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY')
+# app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY')
+app.config['JWT_SECRET_KEY'] = JWT_SECRET_KEY
+app.config['GOOGLE_LANGUAGE_KEY'] = GOOGLE_LANGUAGE_KEY
+app.config['WORDS_API_KEY'] = WORDS_API_KEY
+
 jwt = JWTManager(app)
 
 connect_db(app)
