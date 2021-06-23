@@ -64,11 +64,14 @@ class User(db.Model):
     words = db.relationship('VocabWord', backref='owner',
                             cascade='all, delete-orphan')
 
-
     def change_password(self, password):
         """Change password."""
         hashed = bcrypt.generate_password_hash(password, rounds=14)
         self.password = hashed.decode("utf8")
+
+    # def get_last_language(self):
+    #     """Get the last source code used by the user."""
+    #     return self.last_language
 
     def update_last_language(self, source_code):
         """Update the last source code used by the user."""
@@ -207,6 +210,20 @@ class VocabWord(db.Model):
             'examples': self.examples,
             'notes': self.notes,
             'components': [component.id for component in self.components]
+        }
+    
+    def serialize_and_components(self):
+        return{
+            'id': self.id,
+            'owner_id': self.owner_id,
+            'source_code': self.source_code,
+            'root': self.root,
+            'translation': self.translation,
+            'definition': self.definition,
+            'synonyms': self.synonyms,
+            'examples': self.examples,
+            'notes': self.notes,
+            'components': [component.serialize() for component in self.components]
         }
 
     def components_pos(self):

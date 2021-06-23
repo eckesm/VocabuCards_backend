@@ -1,5 +1,6 @@
 from flask import Flask, render_template, redirect, session, flash, g, request, jsonify, url_for, make_response
 from functools import wraps
+# from flask_cors.decorator import cross_origin
 from flask_debugtoolbar import DebugToolbarExtension
 from models import db, connect_db, Language, Translation, User, VocabWord, VocabWordComponent
 from forms import LoginForm, AddUserForm, VocabWordForm, VocabComponentForm, VocabWordAndComponentForm
@@ -10,9 +11,12 @@ import json
 import os
 # import jwt
 from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required, JWTManager
+from flask_cors import CORS, cross_origin
 from secret import SECRET_KEY, JWT_SECRET_KEY, SQLALCHEMY_DATABASE_URI, GOOGLE_LANGUAGE_KEY, WORDS_API_KEY
 
 app = Flask(__name__)
+cors = CORS(app)
+# app.config['CORS_HEADERS'] = 'Content-Type'
 # app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
 app.config['SQLALCHEMY_DATABASE_URI'] = SQLALCHEMY_DATABASE_URI
 # app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
@@ -98,17 +102,18 @@ def show_new_user_registration_form():
 
         # send_confirm_email_link(email_address)
         # flash('Welcome!', 'success')
-        flash(f" Welcome, {new_user.name}!  You have successfully registered for an account.  Please log in to confirm your password.'", 'success')
+        flash(
+            f" Welcome, {new_user.name}!  You have successfully registered for an account.  Please log in to confirm your password.'", 'success')
 
         # session[CURR_USER_ID] = new_user.id
         # g.user = new_user
-        
+
         # next_url = request.form.get("next")
         # if next_url:
         #     return redirect(next_url)
         # else:
-            # return redirect('/')
-        
+        # return redirect('/')
+
         return redirect('/login')
 
     else:
@@ -122,6 +127,7 @@ def user_identity_lookup(user):
     return user.id
 
 # -------------------------------------------------------------------
+
 
 @jwt.user_lookup_loader
 def user_lookup_callback(_jwt_header, jwt_data):
@@ -427,9 +433,47 @@ def delete_variation(component_id):
 # ------------------------- API routes -----------------------------#
 #####################################################################
 
+@app.route('/api/auth/login', methods=['POST'])
+@cross_origin()
+def login_user_via_API():
+    email = request.json['email']
+    password = request.json['password']
+    # print(email, file=sys.stderr)
+    # print(password, file=sys.stderr)
+    user = User.authenticate(email, password)
+
+    if user == None:
+        response = {
+            'status': 'fail',
+            'message': f'There is no user with the email address {email}.  Please make sure you are entering the correct email address with the correct spelling.'}
+        return jsonify(response)
+
+    if user == False:
+        response = {
+            'status': 'fail',
+            'message': 'Credentials entered were incorrect.  Please try again.'}
+        return jsonify(response)
+
+    if user:
+        access_token = create_access_token(identity=user)
+        response = {
+            'status': 'success',
+            'access_token': access_token,
+            'message': f"Credentials for {email} were authenticated."}
+        return jsonify(response)
+
+    response = {
+        'status': 'error',
+        'message': 'Inputs did not validate!'}
+    return jsonify(response)
+
+# -------------------------------------------------------------------
+# DELETE EVENTUALLY
+
+
 @app.route('/api/translate/<word>/<source_code>/<translate_code>', methods=['GET'])
 @jwt_required()
-def translate(word, source_code, translate_code):
+def translate_OLD(word, source_code, translate_code):
 
     word = TranslationWord(word, source_code, translate_code)
     translation = word.translated_word
@@ -438,8 +482,32 @@ def translate(word, source_code, translate_code):
 
 # -------------------------------------------------------------------
 
+@app.route('/api/vocab/translate/<word>/<source_code>/<translate_code>', methods=['GET'])
+@cross_origin()
+@jwt_required()
+def translate(word, source_code, translate_code):
+
+    word = TranslationWord(word, source_code, translate_code)
+    translation = word.translated_word
+
+    return jsonify(translation)
+
+
+# -------------------------------------------------------------------
+# DELETE
 
 @app.route('/api/dictionary/<word>', methods=['GET'])
+@jwt_required()
+def search_dictionary_OLD(word):
+
+    word = DictionaryWord(word)
+    data = json.loads(word.definitions)
+    return jsonify(data)
+
+# -------------------------------------------------------------------
+
+
+@app.route('/api/vocab/dictionary/<word>', methods=['GET'])
 @jwt_required()
 def search_dictionary(word):
 
@@ -463,11 +531,12 @@ def get_variation_data_by_api(component_id):
         return jsonify(component.serialize())
 
 # -------------------------------------------------------------------
+# DELETE
 
 
 @app.route('/api/words/<source_code>', methods=['GET'])
 @jwt_required()
-def get_users_language_words(source_code):
+def get_users_language_words_OLD(source_code):
 
     current_user = get_jwt_identity()
     user = User.get_by_id(current_user)
@@ -481,7 +550,57 @@ def get_users_language_words(source_code):
 # -------------------------------------------------------------------
 
 
+@app.route('/api/vocab/words/<source_code>', methods=['GET'])
+@cross_origin()
+@jwt_required()
+def get_users_language_words(source_code):
+
+    current_user = get_jwt_identity()
+    user = User.get_by_id(current_user)
+    # user.update_last_language(source_code)
+
+    # words = db.session.query(VocabWord.id, VocabWord.root).filter(
+
+    # words = db.session.query(VocabWord.id, VocabWord.root, VocabWord.translation, VocabWord.definition, VocabWord.synonyms, VocabWord.examples, VocabWord.notes).filter(
+
+    words = db.session.query(VocabWord).filter(
+        VocabWord.owner_id == user.id, VocabWord.source_code == source_code).order_by(VocabWord.root).all()
+
+    # return jsonify([[word[0], word[1]] for word in words])
+
+    # return jsonify([{'id': word[0], 'root':word[1]} for word in words])
+
+    # return jsonify([{
+    #     'id': word.id,
+    #     'root': word.root,
+    #     'translation': word.translation,
+    #     'definition': word.definition,
+    #     'synonyms': word.synonyms,
+    #     'examples': word.examples,
+    #     'notes': word.notes
+    # } for word in words])
+
+    return jsonify([word.serialize_and_components() for word in words])
+
+# -------------------------------------------------------------------
+# DELETE
+
+
 @app.route('/api/last/<source_code>', methods=['GET'])
+@jwt_required()
+def update_users_last_language_OLD(source_code):
+
+    current_user = get_jwt_identity()
+    user = User.get_by_id(current_user)
+    user.update_last_language(source_code)
+
+    return jsonify(user.last_language)
+
+# -------------------------------------------------------------------
+
+
+@app.route('/api/vocab/last/<source_code>', methods=['GET'])
+@cross_origin()
 @jwt_required()
 def update_users_last_language(source_code):
 
@@ -490,6 +609,32 @@ def update_users_last_language(source_code):
     user.update_last_language(source_code)
 
     return jsonify(user.last_language)
+
+# -------------------------------------------------------------------
+
+
+@app.route('/api/vocab/last', methods=['GET'])
+@cross_origin()
+@jwt_required()
+def get_users_last_language():
+
+    current_user = get_jwt_identity()
+    user = User.get_by_id(current_user)
+
+    return jsonify(user.last_language)
+
+# -------------------------------------------------------------------
+
+
+@app.route('/api/vocab/languages', methods=['GET'])
+@cross_origin()
+@jwt_required()
+def get_all_languages():
+
+    # current_user = get_jwt_identity()
+    languages = Language.get_all_options()
+
+    return jsonify(languages)
 
 # -------------------------------------------------------------------
 
