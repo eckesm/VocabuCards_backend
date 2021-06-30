@@ -84,7 +84,7 @@ class VocabWordForm(FlaskForm):
 class VocabComponentForm(FlaskForm):
     """Form for vocabulary word components."""
 
-    part_of_speech = SelectField("Part of speech", choices=[('adjective', 'adjective'), (
+    part_of_speech = SelectField("Part of speech", choices=[('adjective', 'adjective'), ('adverb', 'adverb'), (
         'noun', 'noun'), ('verb', 'verb'), ('other', 'other')], validators=[InputRequired()])
     variation = StringField("Variation of root word",
                             validators=[InputRequired()])
@@ -109,7 +109,7 @@ class VocabWordAndComponentForm(FlaskForm):
                               validators=[Optional()])
     definition = StringField("Definition",
                              validators=[Optional()])
-    part_of_speech = SelectField("Part of speech", choices=[('adjective', 'adjective'), (
+    part_of_speech = SelectField("Part of speech", choices=[('adjective', 'adjective'), ('adverb', 'adverb'), (
         'noun', 'noun'), ('verb', 'verb'), ('other', 'other')], validators=[InputRequired(message="Part of speech is required.")])
     synonyms = StringField("Synonyms",
                            validators=[Optional()])
