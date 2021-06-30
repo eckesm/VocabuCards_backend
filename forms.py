@@ -73,24 +73,33 @@ class VocabWordForm(FlaskForm):
     root = StringField("Word *", validators=[InputRequired()])
     translation = StringField("Translation",
                               validators=[Optional()])
-    definition = StringField("Definition",
-                             validators=[Optional()])
-    synonyms = StringField("Synonyms",
-                           validators=[Optional()])
-    examples = TextAreaField("Examples", validators=[Optional()])
+    # definition = StringField("Definition",
+    #                          validators=[Optional()])
+    # synonyms = StringField("Synonyms",
+    #                        validators=[Optional()])
+    # examples = TextAreaField("Examples", validators=[Optional()])
     notes = TextAreaField("Notes", validators=[Optional()])
 
 
 class VocabComponentForm(FlaskForm):
     """Form for vocabulary word components."""
 
-    part_of_speech = SelectField("Part of speech", choices=[('adjective', 'adjective'), ('adverb', 'adverb'), (
+    class Meta:
+        csrf = False
+
+    part_of_speech = SelectField("Part of speech", choices=[('adjective', 'adjective'), ('adverb', 'adverb'), ('conjunction', 'conjunction'), (
         'noun', 'noun'), ('verb', 'verb'), ('other', 'other')], validators=[InputRequired()])
-    variation = StringField("Variation of root word",
-                            validators=[InputRequired()])
+    # variation = StringField("Variation of root word",
+    #                         validators=[InputRequired()])
+    word = StringField(
+        "Word *", validators=[InputRequired(message="Word is required.")])
     translation = StringField("Translation",
                               validators=[Optional()])
     description = StringField("Description", validators=[Optional()])
+    definition = StringField("Definition",
+                             validators=[Optional()])
+    synonyms = StringField("Synonyms",
+                           validators=[Optional()])
     examples = TextAreaField("Examples", validators=[Optional()])
     notes = TextAreaField("Notes", validators=[Optional()])
 
@@ -107,10 +116,12 @@ class VocabWordAndComponentForm(FlaskForm):
         "Word *", validators=[InputRequired(message="Word is required.")])
     translation = StringField("Translation",
                               validators=[Optional()])
+    description = StringField("Description", validators=[Optional()])
     definition = StringField("Definition",
                              validators=[Optional()])
-    part_of_speech = SelectField("Part of speech", choices=[('adjective', 'adjective'), ('adverb', 'adverb'), (
+    part_of_speech = SelectField("Part of speech", choices=[('adjective', 'adjective'), ('adverb', 'adverb'), ('conjunction', 'conjunction'), (
         'noun', 'noun'), ('verb', 'verb'), ('other', 'other')], validators=[InputRequired(message="Part of speech is required.")])
     synonyms = StringField("Synonyms",
                            validators=[Optional()])
     examples = TextAreaField("Examples", validators=[Optional()])
+    notes = TextAreaField("Notes", validators=[Optional()])

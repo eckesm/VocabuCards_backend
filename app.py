@@ -468,19 +468,7 @@ def login_user_via_API():
     return jsonify(response)
 
 # -------------------------------------------------------------------
-# DELETE EVENTUALLY
 
-
-@app.route('/api/translate/<word>/<source_code>/<translate_code>', methods=['GET'])
-@jwt_required()
-def translate_OLD(word, source_code, translate_code):
-
-    word = TranslationWord(word, source_code, translate_code)
-    translation = word.translated_word
-    return jsonify(translation)
-
-
-# -------------------------------------------------------------------
 
 @app.route('/api/vocab/translate/<word>/<source_code>/<translate_code>', methods=['GET'])
 @cross_origin()
@@ -494,18 +482,6 @@ def translate(word, source_code, translate_code):
 
 
 # -------------------------------------------------------------------
-# DELETE
-
-@app.route('/api/dictionary/<word>', methods=['GET'])
-@jwt_required()
-def search_dictionary_OLD(word):
-
-    word = DictionaryWord(word)
-    data = json.loads(word.definitions)
-    return jsonify(data)
-
-# -------------------------------------------------------------------
-
 
 @app.route('/api/vocab/dictionary/<word>', methods=['GET'])
 @jwt_required()
@@ -529,23 +505,6 @@ def get_variation_data_by_api(component_id):
 
     if component.owner_id == user.id:
         return jsonify(component.serialize())
-
-# -------------------------------------------------------------------
-# DELETE
-
-
-@app.route('/api/words/<source_code>', methods=['GET'])
-@jwt_required()
-def get_users_language_words_OLD(source_code):
-
-    current_user = get_jwt_identity()
-    user = User.get_by_id(current_user)
-    user.update_last_language(source_code)
-
-    words = db.session.query(VocabWord.id, VocabWord.root).filter(
-        VocabWord.owner_id == user.id, VocabWord.source_code == source_code).order_by(VocabWord.root).all()
-
-    return jsonify([[word[0], word[1]] for word in words])
 
 # -------------------------------------------------------------------
 
@@ -589,20 +548,6 @@ def get_users_language_words(source_code):
     return jsonify([word.serialize_and_components() for word in words])
 
 # -------------------------------------------------------------------
-# DELETE
-
-
-@app.route('/api/last/<source_code>', methods=['GET'])
-@jwt_required()
-def update_users_last_language_OLD(source_code):
-
-    current_user = get_jwt_identity()
-    user = User.get_by_id(current_user)
-    user.update_last_language(source_code)
-
-    return jsonify(user.last_language)
-
-# -------------------------------------------------------------------
 
 
 @app.route('/api/vocab/last/<source_code>', methods=['GET'])
@@ -642,52 +587,6 @@ def get_all_languages():
     return jsonify(languages)
 
 # -------------------------------------------------------------------
-# DELETE EVENTUALLY
-
-@app.route('/api/words/new', methods=['POST'])
-@jwt_required()
-def add_new_word_by_api_OLD():
-
-    current_user = get_jwt_identity()
-    user = User.get_by_id(current_user)
-
-    form = VocabWordAndComponentForm()
-    form.source_code.choices = Language.get_all_options()
-    if form.validate():
-
-        user_id = user.id
-        source_code = request.json['source_code']
-        part_of_speech = request.json['part_of_speech']
-        word = request.json['word']
-        translation = request.json['translation']
-        definition = request.json['definition']
-        synonyms = request.json['synonyms']
-        examples = request.json['examples']
-
-        if definition == '0':
-            definition = ''
-
-        new_word = VocabWord.add_vocab_word(
-            user_id, source_code, word, translation, definition, synonyms, examples, '')
-
-        print(f"ROOT_ID: {new_word.id}", file=sys.stderr)
-
-        new_component = VocabWordComponent.add_variation(
-            new_word.id, user_id, part_of_speech, word, translation, examples)
-
-        response = {
-            'word': new_word.serialize(),
-            'status': 'success'
-        }
-        return jsonify(response)
-
-    else:
-        response = {
-            'errors': form.errors,
-            'status': 'errors'
-        }
-        return jsonify(response)
-# -------------------------------------------------------------------
 
 
 @app.route('/api/vocab/words/new', methods=['POST'])
@@ -703,18 +602,19 @@ def add_new_word_by_api():
 
         user_id = user.id
         source_code = request.json['source_code']
-        part_of_speech = request.json['part_of_speech']
+        # part_of_speech = request.json['part_of_speech']
         word = request.json['word']
         translation = request.json['translation']
-        definition = request.json['definition']
-        synonyms = request.json['synonyms']
-        examples = request.json['examples']
+        # definition = request.json['definition']
+        # synonyms = request.json['synonyms']
+        # examples = request.json['examples']
+        notes = request.json['notes']
 
-        if definition == '0':
-            definition = ''
+        # if definition == '0':
+        #     definition = ''
 
         new_word = VocabWord.add_vocab_word(
-            user_id, source_code, word, translation, definition, synonyms, examples, '')
+            user_id, source_code, word, translation, notes)
 
         print(f"ROOT_ID: {new_word.id}", file=sys.stderr)
 
@@ -735,42 +635,6 @@ def add_new_word_by_api():
         return jsonify(response)
 
 # -------------------------------------------------------------------
-# DELETE
-
-@app.route('/api/variations/new', methods=['POST'])
-@jwt_required()
-def add_new_variation_by_api_OLD():
-
-    current_user = get_jwt_identity()
-    user = User.get_by_id(current_user)
-
-    form = VocabWordAndComponentForm()
-    form.source_code.choices = Language.get_all_options()
-    if form.validate():
-
-        root_id = request.json['root_id']
-        user_id = user.id
-        part_of_speech = request.json['part_of_speech']
-        word = request.json['word']
-        translation = request.json['translation']
-        examples = request.json['examples']
-
-        new_component = VocabWordComponent.add_variation(
-            root_id, user_id, part_of_speech, word, translation, examples)
-
-        response = {
-            'component': new_component.serialize(),
-            'status': 'success'
-        }
-        return jsonify(response)
-
-    else:
-        response = {
-            'errors': form.errors,
-            'status': 'errors'
-        }
-        return jsonify(response)
-# -------------------------------------------------------------------
 
 
 @app.route('/api/vocab/variations/new', methods=['POST'])
@@ -789,13 +653,61 @@ def add_new_variation_by_api():
         part_of_speech = request.json['part_of_speech']
         word = request.json['word']
         translation = request.json['translation']
+        description = request.json['description']
+        definition = request.json['definition']
+        synonyms = request.json['synonyms']
         examples = request.json['examples']
+        notes = request.json['notes']
 
         new_component = VocabWordComponent.add_variation(
-            root_id, user_id, part_of_speech, word, translation, examples)
+            root_id, user_id, part_of_speech, word, translation, description, definition, synonyms, examples, notes)
 
         response = {
             'component': new_component.serialize(),
+            'status': 'success'
+        }
+        return jsonify(response)
+
+    else:
+        response = {
+            'errors': form.errors,
+            'status': 'errors'
+        }
+        return jsonify(response)
+
+# -------------------------------------------------------------------
+
+
+@app.route('/api/vocab/variations/<id>', methods=['POST'])
+@jwt_required()
+def edit_variation_by_api(id):
+
+    current_user = get_jwt_identity()
+    user = User.get_by_id(current_user)
+
+    # form = VocabWordAndComponentForm()
+    form = VocabComponentForm()
+    # form.source_code.choices = Language.get_all_options()
+    if form.validate():
+
+        id = request.json['id']
+        user_id = user.id
+        part_of_speech = request.json['part_of_speech']
+        word = request.json['word']
+        translation = request.json['translation']
+        description = request.json['description']
+        definition = request.json['definition']
+        synonyms = request.json['synonyms']
+        examples = request.json['examples']
+        notes = request.json['notes']
+
+        edit_component = VocabWordComponent.get_by_id(id)
+
+        edit_component.update(
+            part_of_speech, word, translation, description, definition, synonyms, examples, notes)
+
+        response = {
+            'component': edit_component.serialize(),
             'status': 'success'
         }
         return jsonify(response)

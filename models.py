@@ -1,5 +1,6 @@
 from flask_bcrypt import Bcrypt
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.sql import func
 from secrets import token_urlsafe
 import string
 import random
@@ -61,6 +62,13 @@ class User(db.Model):
     name = db.Column(db.String(25), nullable=False)
     last_language = db.Column(
         db.String(5), db.ForeignKey('languages.id'), default='en')
+    first_login = db.Column(db.Boolean, nullable=False, default=True)
+    created_at = db.Column(db.DateTime, nullable=False,
+                           server_default=func.now())
+    last_login = db.Column(db.DateTime, nullable=False,
+                           server_default=func.now())
+    current_text = db.Column(db.Text, nullable=True)
+
     words = db.relationship('VocabWord', backref='owner',
                             cascade='all, delete-orphan')
 
@@ -190,9 +198,9 @@ class VocabWord(db.Model):
     source_code = db.Column(db.String(5), db.ForeignKey('languages.id'))
     root = db.Column(db.Text, nullable=False)
     translation = db.Column(db.Text, nullable=True)
-    definition = db.Column(db.Text, nullable=True)
-    synonyms = db.Column(db.Text, nullable=True)
-    examples = db.Column(db.Text, nullable=True)
+    # definition = db.Column(db.Text, nullable=True)
+    # synonyms = db.Column(db.Text, nullable=True)
+    # examples = db.Column(db.Text, nullable=True)
     notes = db.Column(db.Text, nullable=True)
 
     components = db.relationship('VocabWordComponent', backref='root_word',
@@ -205,13 +213,13 @@ class VocabWord(db.Model):
             'source_code': self.source_code,
             'root': self.root,
             'translation': self.translation,
-            'definition': self.definition,
-            'synonyms': self.synonyms,
-            'examples': self.examples,
+            # 'definition': self.definition,
+            # 'synonyms': self.synonyms,
+            # 'examples': self.examples,
             'notes': self.notes,
             'components': [component.id for component in self.components]
         }
-    
+
     def serialize_and_components(self):
         return{
             'id': self.id,
@@ -219,9 +227,9 @@ class VocabWord(db.Model):
             'source_code': self.source_code,
             'root': self.root,
             'translation': self.translation,
-            'definition': self.definition,
-            'synonyms': self.synonyms,
-            'examples': self.examples,
+            # 'definition': self.definition,
+            # 'synonyms': self.synonyms,
+            # 'examples': self.examples,
             'notes': self.notes,
             'components': [component.serialize() for component in self.components]
         }
@@ -237,13 +245,13 @@ class VocabWord(db.Model):
 
         return pos
 
-    def update(self, source_code, root, translation, definition, synonyms, examples, notes):
+    def update(self, source_code, root, translation, notes):
         self.source_code = source_code
         self.root = root
         self.translation = translation
-        self.definition = definition
-        self.synonyms = synonyms
-        self.examples = examples
+        # self.definition = definition
+        # self.synonyms = synonyms
+        # self.examples = examples
         self.notes = notes
         db.session.add(self)
         db.session.commit()
@@ -254,9 +262,9 @@ class VocabWord(db.Model):
         return cls.query.filter_by(id=id).one_or_none()
 
     @classmethod
-    def add_vocab_word(cls, owner_id, source_code, root, translation, definition, synonyms, examples, notes):
+    def add_vocab_word(cls, owner_id, source_code, root, translation, notes):
         new_vocab_word = cls(id=generate_random_string(20, cls.get_by_id), owner_id=owner_id, source_code=source_code,
-                             root=root, translation=translation, definition=definition, synonyms=synonyms, examples=examples, notes=notes)
+                             root=root, translation=translation, notes=notes)
         db.session.add(new_vocab_word)
         db.session.commit()
         return new_vocab_word
@@ -270,10 +278,12 @@ class VocabWordComponent(db.Model):
     id = db.Column(db.Text, primary_key=True)
     root_id = db.Column(db.Text, db.ForeignKey('vocab_words.id'))
     owner_id = db.Column(db.Text, db.ForeignKey('users.id'))
-    part_of_speech = db.Column(db.Text, nullable=False)
     variation = db.Column(db.Text, nullable=False)
     translation = db.Column(db.Text, nullable=True)
+    part_of_speech = db.Column(db.Text, nullable=False)
     description = db.Column(db.Text, nullable=True)
+    definition = db.Column(db.Text, nullable=True)
+    synonyms = db.Column(db.Text, nullable=True)
     examples = db.Column(db.Text, nullable=True)
     notes = db.Column(db.Text, nullable=True)
 
@@ -282,19 +292,23 @@ class VocabWordComponent(db.Model):
             'id': self.id,
             'root_id': self.root_id,
             'owner_id': self.owner_id,
-            'part_of_speech': self.part_of_speech,
             'variation': self.variation,
             'translation': self.translation,
+            'part_of_speech': self.part_of_speech,
             'description': self.description,
+            'definition': self.definition,
+            'synonyms': self.synonyms,
             'examples': self.examples,
             'notes': self.notes
         }
 
-    def update(self, part_of_speech, variation, translation, description, examples, notes):
+    def update(self, part_of_speech, variation, translation, description, definition, synonyms, examples, notes):
         self.part_of_speech = part_of_speech
         self.variation = variation
         self.translation = translation
         self.description = description
+        self.definition = definition
+        self.synonyms = synonyms
         self.examples = examples
         self.notes = notes
         db.session.add(self)
@@ -306,9 +320,9 @@ class VocabWordComponent(db.Model):
         return cls.query.filter_by(id=id).one_or_none()
 
     @classmethod
-    def add_variation(cls, root_id, owner_id, part_of_speech, variation, translation, examples):
+    def add_variation(cls, root_id, owner_id, part_of_speech, variation, translation, description, definition, synonyms, examples,notes):
         new_variation = cls(id=generate_random_string(20, cls.get_by_id), root_id=root_id, owner_id=owner_id,
-                            part_of_speech=part_of_speech, variation=variation, translation=translation, examples=examples)
+                            part_of_speech=part_of_speech, variation=variation, translation=translation, description=description, definition=definition, synonyms=synonyms, examples=examples,notes=notes)
         db.session.add(new_variation)
         db.session.commit()
         return new_variation
