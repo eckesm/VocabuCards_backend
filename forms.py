@@ -68,9 +68,12 @@ class AddUserForm(FlaskForm):
 class VocabWordForm(FlaskForm):
     """Form for vocabulary words."""
 
+    class Meta:
+        csrf = False
+
     source_code = SelectField(
         "Language *", validators=[InputRequired()])
-    root = StringField("Word *", validators=[InputRequired()])
+    word = StringField("Word *", validators=[InputRequired()])
     translation = StringField("Translation",
                               validators=[Optional()])
     # definition = StringField("Definition",
@@ -87,8 +90,10 @@ class VocabComponentForm(FlaskForm):
     class Meta:
         csrf = False
 
-    part_of_speech = SelectField("Part of speech", choices=[('adjective', 'adjective'), ('adverb', 'adverb'), ('conjunction', 'conjunction'), (
-        'noun', 'noun'), ('verb', 'verb'), ('other', 'other')], validators=[InputRequired()])
+    part_of_speech = SelectField("Part of speech",
+                                 choices=[('adjective', 'adjective'), ('adverb', 'adverb'), ('article', 'article'), ('conjunction', 'conjunction'), (
+                                     'noun', 'noun'), ('preposition', 'preposition'), ('verb', 'verb'), ('other', 'other')],
+                                 validators=[InputRequired()])
     # variation = StringField("Variation of root word",
     #                         validators=[InputRequired()])
     word = StringField(
@@ -119,8 +124,10 @@ class VocabWordAndComponentForm(FlaskForm):
     description = StringField("Description", validators=[Optional()])
     definition = StringField("Definition",
                              validators=[Optional()])
-    part_of_speech = SelectField("Part of speech", choices=[('adjective', 'adjective'), ('adverb', 'adverb'), ('conjunction', 'conjunction'), (
-        'noun', 'noun'), ('verb', 'verb'), ('other', 'other')], validators=[InputRequired(message="Part of speech is required.")])
+    part_of_speech = SelectField("Part of speech",
+                                 choices=[('adjective', 'adjective'), ('adverb', 'adverb'), ('article', 'article'), ('conjunction', 'conjunction'), (
+                                     'noun', 'noun'), ('preposition', 'preposition'), ('verb', 'verb'), ('other', 'other')],
+                                 validators=[InputRequired(message="Part of speech is required.")])
     synonyms = StringField("Synonyms",
                            validators=[Optional()])
     examples = TextAreaField("Examples", validators=[Optional()])

@@ -590,6 +590,7 @@ def get_all_languages():
 
 
 @app.route('/api/vocab/words/new', methods=['POST'])
+@cross_origin()
 @jwt_required()
 def add_new_word_by_api():
 
@@ -602,24 +603,14 @@ def add_new_word_by_api():
 
         user_id = user.id
         source_code = request.json['source_code']
-        # part_of_speech = request.json['part_of_speech']
         word = request.json['word']
         translation = request.json['translation']
-        # definition = request.json['definition']
-        # synonyms = request.json['synonyms']
-        # examples = request.json['examples']
         notes = request.json['notes']
-
-        # if definition == '0':
-        #     definition = ''
 
         new_word = VocabWord.add_vocab_word(
             user_id, source_code, word, translation, notes)
 
         print(f"ROOT_ID: {new_word.id}", file=sys.stderr)
-
-        # new_component = VocabWordComponent.add_variation(
-        #     new_word.id, user_id, part_of_speech, word, translation, examples)
 
         response = {
             'word': new_word.serialize(),
@@ -633,6 +624,82 @@ def add_new_word_by_api():
             'status': 'errors'
         }
         return jsonify(response)
+
+# -------------------------------------------------------------------
+
+
+@app.route('/api/vocab/words/<id>', methods=['PUT'])
+@cross_origin()
+@jwt_required()
+def edit_word_by_api(id):
+
+    current_user = get_jwt_identity()
+    user = User.get_by_id(current_user)
+
+    form = VocabWordForm()
+    form.source_code.choices = Language.get_all_options()
+    if form.validate():
+
+        user_id = user.id
+        source_code = request.json['source_code']
+        word = request.json['word']
+        translation = request.json['translation']
+        notes = request.json['notes']
+
+        edit_word = VocabWord.get_by_id(id)
+
+        if edit_word.owner_id != user_id:
+            response = {
+                'restriction': 'User is not authorized to edit this word.',
+                'status': 'restricted'
+            }
+            return jsonify(response)
+
+        edit_word.update(
+            source_code, word, translation, notes)
+
+        response = {
+            'word': edit_word.serialize_and_components(),
+            'status': 'success'
+        }
+        return jsonify(response)
+
+    else:
+        response = {
+            'errors': form.errors,
+            'status': 'errors'
+        }
+        return jsonify(response)
+
+# -------------------------------------------------------------------
+
+
+@app.route('/api/vocab/words/<id>', methods=['DELETE'])
+@cross_origin()
+@jwt_required()
+def delete_word_by_api(id):
+
+    current_user = get_jwt_identity()
+    user = User.get_by_id(current_user)
+    user_id = user.id
+
+    delete_word = VocabWord.get_by_id(id)
+
+    if delete_word.owner_id != user_id:
+        response = {
+            'restriction': 'User is not authorized to delete this word.',
+            'status': 'restricted'
+        }
+        return jsonify(response)
+
+    db.session.delete(delete_word)
+    db.session.commit()
+
+    response = {
+        'word': id,
+        'status': 'deleted'
+    }
+    return jsonify(response)
 
 # -------------------------------------------------------------------
 
@@ -678,19 +745,16 @@ def add_new_variation_by_api():
 # -------------------------------------------------------------------
 
 
-@app.route('/api/vocab/variations/<id>', methods=['POST'])
+@app.route('/api/vocab/variations/<id>', methods=['PUT'])
 @jwt_required()
 def edit_variation_by_api(id):
 
     current_user = get_jwt_identity()
     user = User.get_by_id(current_user)
-
-    # form = VocabWordAndComponentForm()
     form = VocabComponentForm()
-    # form.source_code.choices = Language.get_all_options()
     if form.validate():
 
-        id = request.json['id']
+        # id = request.json['id']
         user_id = user.id
         part_of_speech = request.json['part_of_speech']
         word = request.json['word']
@@ -702,6 +766,13 @@ def edit_variation_by_api(id):
         notes = request.json['notes']
 
         edit_component = VocabWordComponent.get_by_id(id)
+
+        if edit_component.owner_id != user_id:
+            response = {
+                'restriction': 'User is not authorized to edit this component.',
+                'status': 'restricted'
+            }
+            return jsonify(response)
 
         edit_component.update(
             part_of_speech, word, translation, description, definition, synonyms, examples, notes)
@@ -718,3 +789,32 @@ def edit_variation_by_api(id):
             'status': 'errors'
         }
         return jsonify(response)
+
+# -------------------------------------------------------------------
+
+
+@app.route('/api/vocab/variations/<id>', methods=['DELETE'])
+@jwt_required()
+def delete_variation_by_api(id):
+
+    current_user = get_jwt_identity()
+    user = User.get_by_id(current_user)
+    user_id = user.id
+
+    delete_component = VocabWordComponent.get_by_id(id)
+
+    if delete_component.owner_id != user_id:
+        response = {
+            'restriction': 'User is not authorized to delete this component.',
+            'status': 'restricted'
+        }
+        return jsonify(response)
+
+    db.session.delete(delete_component)
+    db.session.commit()
+
+    response = {
+        'component': id,
+        'status': 'deleted'
+    }
+    return jsonify(response)

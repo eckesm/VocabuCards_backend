@@ -249,9 +249,6 @@ class VocabWord(db.Model):
         self.source_code = source_code
         self.root = root
         self.translation = translation
-        # self.definition = definition
-        # self.synonyms = synonyms
-        # self.examples = examples
         self.notes = notes
         db.session.add(self)
         db.session.commit()
