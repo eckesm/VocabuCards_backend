@@ -46,6 +46,9 @@ class LoginForm(FlaskForm):
 class AddUserForm(FlaskForm):
     """Form for adding users."""
 
+    class Meta:
+        csrf = False
+
     name = StringField("Name", validators=[
         InputRequired(message="Input required."),
         Length(

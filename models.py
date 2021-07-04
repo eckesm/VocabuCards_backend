@@ -76,10 +76,8 @@ class User(db.Model):
         """Change password."""
         hashed = bcrypt.generate_password_hash(password, rounds=14)
         self.password = hashed.decode("utf8")
-
-    # def get_last_language(self):
-    #     """Get the last source code used by the user."""
-    #     return self.last_language
+        db.session.add(self)
+        db.session.commit()
 
     def update_last_language(self, source_code):
         """Update the last source code used by the user."""
@@ -87,6 +85,36 @@ class User(db.Model):
         db.session.add(self)
         db.session.commit()
         return source_code
+
+    def update_current_text(self, text):
+        """Update the user's current text."""
+        self.current_text = text
+        db.session.add(self)
+        db.session.commit()
+        return text
+
+    def update_last_login(self):
+        """Update user's last login to now."""
+        # self.last_login = func.now()
+        self.last_login = datetime.datetime.utcnow()
+        db.session.add(self)
+        db.session.commit()
+        return self.last_login
+
+    def update_first_login(self):
+        """Update user's first login status to false."""
+        self.first_login = False
+        db.session.add(self)
+        db.session.commit()
+        return self.first_login
+
+    def confirm_email_address(self):
+        """Update is_email_confirmed to True and clear email_confirm_token."""
+        self.is_email_confirmed = True
+        self.email_confirm_token = None
+        db.session.add(self)
+        db.session.commit()
+        return self.is_email_confirmed
 
     @ classmethod
     def generate_api_token(cls):
@@ -99,7 +127,7 @@ class User(db.Model):
         hashed_utf = hashed.decode("utf8")
 
         new_user = cls(id=generate_random_string(10, cls.get_by_id), name=name, email_address=email_address.lower(
-        ), password=hashed_utf, api_token=cls.generate_api_token())
+        ), password=hashed_utf, api_token=cls.generate_api_token(), email_confirm_token=cls.generate_api_token())
         db.session.add(new_user)
         db.session.commit()
         return new_user
@@ -112,7 +140,6 @@ class User(db.Model):
         if user:
             if bcrypt.check_password_hash(user.password, password):
                 return cls.get_by_email(email_address.lower())
-                # return True
             else:
                 return False
         else:
@@ -125,6 +152,14 @@ class User(db.Model):
     @ classmethod
     def get_by_email(cls, email_address):
         return cls.query.filter_by(email_address=email_address.lower()).one_or_none()
+
+    @ classmethod
+    def get_by_password_reset_token(cls, token):
+        return cls.query.filter_by(password_reset_token=token).one_or_none()
+
+    @ classmethod
+    def get_by_email_confirm_token(cls, token):
+        return cls.query.filter_by(email_confirm_token=token).one_or_none()
 
 
 class Translation(db.Model):
@@ -317,9 +352,9 @@ class VocabWordComponent(db.Model):
         return cls.query.filter_by(id=id).one_or_none()
 
     @classmethod
-    def add_variation(cls, root_id, owner_id, part_of_speech, variation, translation, description, definition, synonyms, examples,notes):
+    def add_variation(cls, root_id, owner_id, part_of_speech, variation, translation, description, definition, synonyms, examples, notes):
         new_variation = cls(id=generate_random_string(20, cls.get_by_id), root_id=root_id, owner_id=owner_id,
-                            part_of_speech=part_of_speech, variation=variation, translation=translation, description=description, definition=definition, synonyms=synonyms, examples=examples,notes=notes)
+                            part_of_speech=part_of_speech, variation=variation, translation=translation, description=description, definition=definition, synonyms=synonyms, examples=examples, notes=notes)
         db.session.add(new_variation)
         db.session.commit()
         return new_variation

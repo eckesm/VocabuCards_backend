@@ -2,6 +2,8 @@ from flask import Flask, render_template, redirect, session, flash, g, request, 
 from functools import wraps
 # from flask_cors.decorator import cross_origin
 from flask_debugtoolbar import DebugToolbarExtension
+# from flask_sqlalchemy import SQLAlchemy
+from flask_mail import Mail, Message
 from models import db, connect_db, Language, Translation, User, VocabWord, VocabWordComponent
 from forms import LoginForm, AddUserForm, VocabWordForm, VocabComponentForm, VocabWordAndComponentForm
 from word import TranslationWord, DictionaryWord
@@ -12,7 +14,8 @@ import os
 # import jwt
 from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required, JWTManager
 from flask_cors import CORS, cross_origin
-from secret import SECRET_KEY, JWT_SECRET_KEY, SQLALCHEMY_DATABASE_URI, GOOGLE_LANGUAGE_KEY, WORDS_API_KEY
+from secrets import token_urlsafe
+from secret import SECRET_KEY, JWT_SECRET_KEY, SQLALCHEMY_DATABASE_URI, GOOGLE_LANGUAGE_KEY, WORDS_API_KEY, MAIL_PASSWORD, MAIL_PORT, MAIL_SERVER, MAIL_USE_TLS, MAIL_USERNAME, REACT_PRODUCTION_DOMAIN
 
 app = Flask(__name__)
 cors = CORS(app)
@@ -29,98 +32,27 @@ app.config['JWT_SECRET_KEY'] = JWT_SECRET_KEY
 app.config['GOOGLE_LANGUAGE_KEY'] = GOOGLE_LANGUAGE_KEY
 app.config['WORDS_API_KEY'] = WORDS_API_KEY
 
+app.config['MAIL_PASSWORD'] = MAIL_PASSWORD
+app.config['MAIL_USERNAME'] = MAIL_USERNAME
+app.config['MAIL_SERVER'] = MAIL_SERVER
+app.config['MAIL_PORT'] = MAIL_PORT
+app.config['MAIL_USE_TLS'] = MAIL_USE_TLS
+
+app.config['REACT_PRODUCTION_DOMAIN'] = REACT_PRODUCTION_DOMAIN
+react_app_url = app.config["REACT_PRODUCTION_DOMAIN"]
+
+mail = Mail(app)
+
+
 jwt = JWTManager(app)
 
 connect_db(app)
 toolbar = DebugToolbarExtension(app)
 
-CURR_USER_ID = "curr_user"
-PARTS_OF_SPEECH = [('adjective', 'adjective'), ('noun', 'noun'),
-                   ('verb', 'verb'), ('other', 'other')]
-
-# -------------------------------------------------------------------
-
-
-@app.before_request
-def add_user_to_g():
-    """If logged in, add current user to Flask global."""
-    if CURR_USER_ID in session:
-        g.user = User.get_by_id(session[CURR_USER_ID])
-    else:
-        g.user = None
-
-# -------------------------------------------------------------------
-
-
-def login_required(func):
-    @wraps(func)
-    def decorated_function(*args, **kwargs):
-        if CURR_USER_ID not in session:
-            log_out_procedures()
-            flash("You must be logged-in to access this resource.", 'danger')
-            return redirect(url_for('login', next=request.url))
-        return func(*args, **kwargs)
-    return decorated_function
-
-
-def log_out_procedures():
-    if CURR_USER_ID in session:
-        del session[CURR_USER_ID]
-    g.user = None
-
-# -------------------------------------------------------------------
-
-
-@app.route('/')
-def show_home_page():
-    if CURR_USER_ID in session:
-        return redirect('/study')
-    else:
-        return redirect('/login')
 
 #####################################################################
 # ---------------------------- Users -------------------------------#
 #####################################################################
-
-
-@app.route('/register', methods=['GET', 'POST'])
-def show_new_user_registration_form():
-    """Attempts to create a new user based on form submission."""
-
-    if CURR_USER_ID in session:
-        flash('You have been logged out', 'info')
-    log_out_procedures()
-
-    form = AddUserForm()
-    if form.validate_on_submit():
-
-        name = form.name.data
-        email_address = form.email_address.data
-        password = form.password.data
-
-        new_user = User.register(name, email_address, password)
-
-        # send_confirm_email_link(email_address)
-        # flash('Welcome!', 'success')
-        flash(
-            f" Welcome, {new_user.name}!  You have successfully registered for an account.  Please log in to confirm your password.'", 'success')
-
-        # session[CURR_USER_ID] = new_user.id
-        # g.user = new_user
-
-        # next_url = request.form.get("next")
-        # if next_url:
-        #     return redirect(next_url)
-        # else:
-        # return redirect('/')
-
-        return redirect('/login')
-
-    else:
-        return render_template('register.html', form=form)
-
-# -------------------------------------------------------------------
-
 
 @jwt.user_identity_loader
 def user_identity_lookup(user):
@@ -134,299 +66,82 @@ def user_lookup_callback(_jwt_header, jwt_data):
     identity = jwt_data["sub"]
     return User.get_by_id(identity)
 
-# -------------------------------------------------------------------
 
+#####################################################################
+# ------------------ Confirming Email Address --------------------- #
+#####################################################################
 
-@app.route('/get-cookie', methods=['POST'])
-def get_cookie():
+def send_confirm_email_link(email_address):
+    user = User.get_by_email(email_address)
 
-    form = LoginForm()
-    if form.validate():
-        email_address = request.json.get("email_address", None)
-        password = request.json.get("password", None)
-        user = User.authenticate(email_address, password)
-
-        if user == None:
-            response = {
-                "status": "fail",
-                "message": f"There is no user with the email address {email_address}.  Please make sure you are entering the correct email address with the correct spelling."
-            }
-            return jsonify(response)
-
-        if user == False:
-            response = {
-                "status": "fail",
-                "message": "Credentials entered were incorrect.  Please try again."
-            }
-            return jsonify(response)
-
-        access_token = create_access_token(identity=user)
-        response = {
-            "status": "success",
-            "access_token": access_token,
-            "message": f"Credentials for {email_address} were authenticated."
+    if user == None:
+        return {
+            'status': 'fail',
+            'message': f"The email address {email_address} is not associated with an account.",
+            'email_address': email_address
         }
-        return jsonify(response)
 
     else:
-        return jsonify('ERROR: form did not validate!')
 
-# -------------------------------------------------------------------
+        if user.email_confirm_token == None:
+            token = token_urlsafe(16)
+            user.email_confirm_token = token
+            db.session.commit()
 
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    """Show login form and login user."""
-
-    if CURR_USER_ID in session:
-        flash('You have been logged out', 'info')
-    log_out_procedures()
-
-    form = LoginForm()
-    if form.validate_on_submit():
-
-        email_address = form.email_address.data
-        password = form.password.data
-        user = User.authenticate(email_address, password)
-
-        if user == None:
-
-            flash(
-                f'There is no user with the email address {email_address}.  Please make sure you are entering the correct email address with the correct spelling.', 'warning')
-            return redirect('/login')
-
-        if user == False:
-
-            flash('Credentials entered were incorrect.  Please try again.',
-                  'warning')
-            return redirect('/login')
-
-        session[CURR_USER_ID] = user.id
-        g.user = user
-        flash('Login successful!', 'info')
-
-        next_url = request.form.get("next")
-        if next_url:
-            return redirect(next_url)
         else:
-            return redirect('/')
+            token = user.email_confirm_token
 
-    return render_template('login.html', form=form)
+        msg = Message('Please confirm your email address.',
+                      sender='eckesm@gmail.com',
+                      recipients=[email_address])
+        msg.body = f"Go to this link to confirm your email address: {react_app_url}/#/confirm-email/{token}"
+        msg.html = f"<b>Almost done!</b>  Click <a href='{react_app_url}/#/confirm-email/{token}'>THIS LINK</a> to confirm your email address."
+        mail.send(msg)
+        # flash('Please check your email for a link to confirm your email address.', 'info')
 
+        return {
+            'status': 'success',
+            'message': 'Please check your email for a link to confirm your email address.',
+            'email_address': email_address
+        }
 
-# -------------------------------------------------------------------
-
-
-@app.route('/logout', methods=['GET', 'POST'])
-def logout():
-    """Log out user."""
-    if CURR_USER_ID not in session:
-        flash('There is no user logged in.', 'info')
-    else:
-        flash('You have been logged out', 'info')
-    log_out_procedures()
-    return redirect('/login')
 
 #####################################################################
-# ---------------------------- Study -------------------------------#
+# ----------------------- Reset Password -------------------------- #
 #####################################################################
 
+def send_password_reset_link(email_address):
+    user = User.get_by_email(email_address)
 
-@app.route('/study')
-@login_required
-def show_study_material():
-    languages = Language.get_all_options()
-    return render_template('study_material.html', languages=languages, parts_of_speech=PARTS_OF_SPEECH)
-
-#####################################################################
-# ---------------------------- Words -------------------------------#
-#####################################################################
-
-
-@app.route('/words/language/<source_code>', methods=['GET'])
-@login_required
-def view_user_words(source_code):
-
-    languages = Language.get_all_options()
-    sorted_words = db.session.query(VocabWord).filter(
-        VocabWord.owner_id == g.user.id, VocabWord.source_code == source_code).order_by(VocabWord.root).all()
-
-    return render_template('words.html', languages=languages, words=sorted_words, source_code=source_code)
-
-# -------------------------------------------------------------------
-
-
-@app.route('/words/new', methods=['GET', 'POST'])
-@login_required
-def add_vocab_word():
-
-    form = VocabWordForm()
-    form.source_code.choices = Language.get_all_options()
-    if form.validate_on_submit():
-
-        source_code = form.source_code.data
-        root = form.root.data
-        translation = form.translation.data
-        definition = form.definition.data
-        synonyms = form.synonyms.data
-        examples = form.examples.data
-        notes = form.notes.data
-
-        new_vocab_word = VocabWord.add_vocab_word(
-            session[CURR_USER_ID], source_code, root, translation, definition, synonyms, examples, notes)
-
-        g.user.update_last_language(source_code)
-
-        flash(f"{new_vocab_word.root} created!", 'success')
-        return redirect(f"/words/{new_vocab_word.id}")
+    if user == None:
+        return {
+            'status': 'fail',
+            'message': f"The email address {email_address} is not associated with an account.",
+            'email_address': email_address
+        }
 
     else:
-        return render_template('new_vocab_word.html', vocab_word_form=form)
 
+        if user.password_reset_token == None:
+            token = token_urlsafe(16)
+            user.password_reset_token = token
+            db.session.commit()
 
-# -------------------------------------------------------------------
+        else:
+            token = user.password_reset_token
 
+        msg = Message('Please reset your password.',
+                      sender='eckesm@gmail.com',
+                      recipients=[email_address])
+        msg.body = f"Go to this link to confirm your email address: {react_app_url}/#/new-password/{token}"
+        msg.html = f"<b>Almost done!</b>  Click <a href='{react_app_url}/#/new-password/{token}'>THIS LINK</a> to reset your password."
+        mail.send(msg)
 
-@app.route('/words/<word_id>', methods=['GET'])
-@login_required
-def show_vocab_word(word_id):
-
-    word = VocabWord.get_by_id(word_id)
-    components = word.components
-    parts_of_speech = word.components_pos()
-    print(f"POS: {parts_of_speech}", file=sys.stderr)
-
-    vocab_word_form = VocabWordForm(obj=word)
-    vocab_word_form.source_code.choices = Language.get_all_options()
-
-    vocab_component_form = VocabComponentForm()
-
-    return render_template('view_vocab_word.html', vocab_word_form=vocab_word_form, vocab_component_form=vocab_component_form, word=word, components=components, parts_of_speech=parts_of_speech)
-
-# -------------------------------------------------------------------
-
-
-@app.route('/words/<word_id>/delete', methods=['POST'])
-@login_required
-def delete_vocab_word(word_id):
-
-    word = VocabWord.get_by_id(word_id)
-    word_root = word.root
-    db.session.delete(word)
-    db.session.commit()
-
-    flash(f"{word_root} deleted!", 'success')
-
-    return redirect(f"/words/language/{g.user.last_language}")
-
-# -------------------------------------------------------------------
-
-
-@app.route('/words/<word_id>/edit', methods=['GET', 'POST'])
-@login_required
-def edit_vocab_word(word_id):
-
-    word = VocabWord.get_by_id(word_id)
-    form = VocabWordForm(obj=word)
-    form.source_code.choices = Language.get_all_options()
-    if form.validate_on_submit():
-
-        source_code = form.source_code.data
-        root = form.root.data
-        translation = form.translation.data
-        definition = form.definition.data
-        synonyms = form.synonyms.data
-        examples = form.examples.data
-        notes = form.notes.data
-
-        update_vocab_word = word.update(source_code,
-                                        root, translation, definition, synonyms, examples, notes)
-
-        g.user.update_last_language(source_code)
-
-        flash(f"{update_vocab_word.root} edited!", 'success')
-        return redirect(f"/words/{update_vocab_word.id}")
-
-    else:
-        flash(f"Error updating vocabulary word!", 'warning')
-        return render_template('edit_vocab_word.html', vocab_word_form=form, word=word)
-
-#####################################################################
-# ------------------------- Variations -----------------------------#
-#####################################################################
-
-
-@app.route('/words/<word_id>/variations/new', methods=['GET', 'POST'])
-@login_required
-def add_vocab_component(word_id):
-
-    form = VocabComponentForm()
-    if form.validate_on_submit():
-
-        # source_code = form.source_code.data
-        part_of_speech = form.part_of_speech.data
-        variation = form.variation.data
-        translation = form.translation.data
-        # description = form.description.data
-        examples = form.examples.data
-        # notes = form.notes.data
-
-        new_variation = VocabWordComponent.add_variation(word_id,
-                                                         session[CURR_USER_ID], part_of_speech, variation, translation, examples)
-
-        flash(f"{new_variation.variation} created!", 'success')
-        return redirect(f"/words/{word_id}")
-
-    else:
-        word = VocabWord.get_by_id(word_id)
-        return render_template('new_vocab_component.html', vocab_component_form=form, word=word)
-
-
-# -------------------------------------------------------------------
-
-
-@app.route('/words/<word_id>/variations/<component_id>', methods=['GET', 'POST'])
-@login_required
-def edit_vocab_component(word_id, component_id):
-
-    component = VocabWordComponent.get_by_id(component_id)
-
-    form = VocabComponentForm()
-    if form.validate_on_submit():
-
-        part_of_speech = form.part_of_speech.data
-        variation = form.variation.data
-        translation = form.translation.data
-        description = form.description.data
-        examples = form.examples.data
-        notes = form.notes.data
-
-        update_component = component.update(
-            part_of_speech, variation, translation, description, examples, notes)
-
-        flash(f"{update_component.variation} edited!", 'success')
-        return redirect(f"/words/{update_component.root_id}")
-
-    else:
-        flash(f"Error updating vocabulary word variation!", 'warning')
-        return render_template('edit_vocab_component.html', vocab_component_form=form, component=component)
-
-# -------------------------------------------------------------------
-
-
-@app.route('/variations/<component_id>/delete', methods=['POST'])
-@login_required
-def delete_variation(component_id):
-
-    component = VocabWordComponent.get_by_id(component_id)
-    variation = component.variation
-    root_id = component.root_id
-    db.session.delete(component)
-    db.session.commit()
-
-    flash(f"{variation} deleted!", 'success')
-
-    return redirect(f"/words/{root_id}")
+        return {
+            'status': 'success',
+            'message': 'Please check your email for a link to reset your password.',
+            'email_address': email_address
+        }
 
 
 #####################################################################
@@ -436,35 +151,168 @@ def delete_variation(component_id):
 @app.route('/api/auth/login', methods=['POST'])
 @cross_origin()
 def login_user_via_API():
-    email = request.json['email']
+
+    form = LoginForm()
+    if form.validate():
+
+        email_address = request.json['email_address']
+        password = request.json['password']
+        user = User.authenticate(email_address, password)
+
+        if user == None:
+            response = {
+                'status': 'error',
+                'message': f'There is no user with the email address {email_address}.  Please make sure you are entering the correct email address with the correct spelling.'}
+            return jsonify(response)
+
+        if user == False:
+            response = {
+                'status': 'fail',
+                'message': 'Credentials entered were incorrect.  Please try again.'}
+            return jsonify(response)
+
+        if user:
+            access_token = create_access_token(identity=user)
+            last_login = user.last_login
+            user.update_last_login()
+            if user.first_login == True:
+                user.update_first_login()
+
+            response = {
+                'status': 'success',
+                'access_token': access_token,
+                'message': f"Credentials for {email_address} were authenticated.",
+                'last_login': last_login}
+            return jsonify(response)
+
+    else:
+
+        response = {
+            'status': 'error',
+            'message': 'Inputs did not validate!'}
+        return jsonify(response)
+
+# -------------------------------------------------------------------
+
+
+@app.route('/api/auth/register', methods=['POST'])
+@cross_origin()
+def register_user_via_API():
+
+    form = AddUserForm()
+    if form.validate():
+
+        name = request.json['name']
+        email_address = request.json['email_address']
+        password = request.json['password']
+        new_user = User.register(name, email_address, password)
+
+        if new_user:
+            send_confirm_email_link(email_address)
+            access_token = create_access_token(identity=new_user)
+            response = {
+                'status': 'success',
+                'access_token': access_token,
+                'message': f"Welcome, {name}!  Credentials for {email_address} were created successfully."}
+            return jsonify(response)
+
+    else:
+
+        response = {
+            'status': 'error',
+            'message': 'Inputs did not validate!'}
+        return jsonify(response)
+
+# -------------------------------------------------------------------
+
+
+@app.route('/api/confirm-email', methods=['POST'])
+@cross_origin()
+def confirm_email_address_via_API():
+    token = request.json['token']
     password = request.json['password']
-    # print(email, file=sys.stderr)
-    # print(password, file=sys.stderr)
-    user = User.authenticate(email, password)
+
+    user = User.get_by_email_confirm_token(token)
 
     if user == None:
         response = {
             'status': 'fail',
-            'message': f'There is no user with the email address {email}.  Please make sure you are entering the correct email address with the correct spelling.'}
+            'message': 'There is no user with a matching email confirmation token.'}
         return jsonify(response)
 
-    if user == False:
+    else:
+
+        authenticated_user = user.authenticate(user.email_address, password)
+
+        if authenticated_user:
+
+            authenticated_user.confirm_email_address()
+
+            response = {
+                'status': 'success',
+                'message': f"Thank you for confirming your email address, {authenticated_user.name}!  You can now use this email address to reset your password."}
+            return jsonify(response)
+
+        else:
+            response = {
+                'status': 'fail',
+                'message': f"The password entered is incorrect for the account associatied the email confirmation token {token}."}
+            return jsonify(response)
+
+# -------------------------------------------------------------------
+
+
+@app.route('/api/send-confirm-email', methods=['POST'])
+@cross_origin()
+def send_confirm_email_via_API():
+    email_address = request.json['email_address']
+    response = send_confirm_email_link(email_address)
+    return jsonify(response)
+
+# -------------------------------------------------------------------
+
+
+@app.route('/api/password-reset', methods=['POST'])
+@cross_origin()
+def password_reset_via_API():
+    token = request.json['token']
+    password = request.json['password']
+    password_check = request.json['password_check']
+
+    user = User.get_by_password_reset_token(token)
+
+    if user == None:
         response = {
-            'status': 'fail',
-            'message': 'Credentials entered were incorrect.  Please try again.'}
+            'status': 'error',
+            'message': 'There is no user with a matching password reset token.'}
         return jsonify(response)
 
-    if user:
-        access_token = create_access_token(identity=user)
-        response = {
-            'status': 'success',
-            'access_token': access_token,
-            'message': f"Credentials for {email} were authenticated."}
-        return jsonify(response)
+    else:
 
-    response = {
-        'status': 'error',
-        'message': 'Inputs did not validate!'}
+        if password != password_check:
+            response = {
+                'status': 'fail',
+                'message': 'The passwords do not match.'}
+            return jsonify(response)
+
+        else:
+
+            user.change_password(password)
+
+            response = {
+                'status': 'success',
+                'message': "Your password has been updated successfully!"}
+            return jsonify(response)
+
+
+# -------------------------------------------------------------------
+
+
+@app.route('/api/send-password-reset', methods=['POST'])
+@cross_origin()
+def send_password_reset_via_API():
+    email_address = request.json['email_address']
+    response = send_password_reset_link(email_address)
     return jsonify(response)
 
 # -------------------------------------------------------------------
@@ -523,10 +371,12 @@ def get_user_start_information():
         VocabWord.owner_id == user.id, VocabWord.source_code == last_language).order_by(VocabWord.root).all()
 
     response = {
+        'current_text': user.current_text,
         'languages': languages,
+        'last_login': user.last_login,
         'last_source_code': last_language,
-        'words_array': [word.serialize_and_components() for word in words],
-        'user': user.email_address
+        'user': user.email_address,
+        'words_array': [word.serialize_and_components() for word in words]
     }
 
     return jsonify(response)
@@ -557,6 +407,10 @@ def update_users_last_language(source_code):
 
     current_user = get_jwt_identity()
     user = User.get_by_id(current_user)
+
+    if user.last_language != source_code:
+        user.update_current_text(None)
+
     user.update_last_language(source_code)
 
     return jsonify(user.last_language)
@@ -585,6 +439,29 @@ def get_all_languages():
     languages = Language.get_all_options()
 
     return jsonify(languages)
+
+    # -------------------------------------------------------------------
+
+
+@app.route('/api/vocab/renderedtext', methods=['PUT'])
+@cross_origin()
+@jwt_required()
+def save_input_text_by_api():
+
+    current_user = get_jwt_identity()
+    user = User.get_by_id(current_user)
+
+    # user_id = user.id
+    # source_code = request.json['source_code']
+    text = request.json['text']
+
+    current_text = user.update_current_text(text)
+
+    response = {
+        'text': current_text,
+        'status': 'success'
+    }
+    return jsonify(response)
 
 # -------------------------------------------------------------------
 
