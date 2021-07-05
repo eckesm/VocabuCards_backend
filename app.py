@@ -145,8 +145,85 @@ def send_password_reset_link(email_address):
 
 
 #####################################################################
+# -------------------- Create Starter Words ----------------------- #
+#####################################################################
+
+STARTER_WORDS = {
+    'sv': [
+        {
+            'root': 'hund',
+            'translation': 'dog',
+            'notes': 'mannens bästa vän.',
+            'variations': [
+                {
+                    'part_of_speech': 'noun',
+                    'variation': 'en hund',
+                    'translation': 'a dog',
+                    'description': 'singular, indefinite',
+                    'definition': 'a domestic mammal that is related to the wolves and foxes.',
+                    'synonyms': 'canine, doggy (or doggie), hound, pooch, tyke (also tike)',
+                    'examples': 'a dog who needs a loving home',
+                    'notes': 'en noun'
+                },
+                {
+                    'part_of_speech': 'noun',
+                    'variation': 'hunden',
+                    'translation': 'the dog',
+                    'description': 'singular, definite',
+                    'definition': '',
+                    'synonyms': '',
+                    'examples': '',
+                    'notes': 'en noun'
+                }
+            ]
+        }
+    ]
+}
+
+
+def create_starter_word(owner_id, source_code, root, translation, notes):
+    new_vocab_word = VocabWord.add_vocab_word(
+        owner_id, source_code, root, translation, notes)
+    return new_vocab_word
+
+
+def create_starter_component(root_id, owner_id, part_of_speech, variation, translation, description, definition, synonyms, examples, notes):
+    new_variation = VocabWordComponent.add_variation(
+        root_id, owner_id, part_of_speech, variation, translation, description, definition, synonyms, examples, notes)
+    return new_variation
+
+
+def create_all_starters(owner_id):
+    for source_code, words in STARTER_WORDS.items():
+        for word in words:
+            new_word = create_starter_word(
+                owner_id, source_code, word['root'], word['translation'], word['notes'])
+            for variation in word['variations']:
+                create_starter_component(new_word.id, owner_id, variation['part_of_speech'], variation['variation'], variation['translation'],
+                                         variation['description'], variation['definition'], variation['synonyms'], variation['examples'], variation['notes'])
+    return {
+        'status': 'success',
+        'message': 'Successfully created starter vocabulary words.'
+    }
+
+
+#####################################################################
 # ------------------------- API routes -----------------------------#
 #####################################################################
+
+
+# @app.route('/api/auth/starters', methods=['GET'])
+# @cross_origin()
+# @jwt_required()
+# def create_starter_words_via_API():
+
+#     current_user = get_jwt_identity()
+#     user = User.get_by_id(current_user)
+#     response = create_all_starters(user.id)
+#     return jsonify(response)
+
+# -------------------------------------------------------------------
+
 
 @app.route('/api/auth/login', methods=['POST'])
 @cross_origin()
@@ -205,10 +282,21 @@ def register_user_via_API():
         name = request.json['name']
         email_address = request.json['email_address']
         password = request.json['password']
-        new_user = User.register(name, email_address, password)
+        password_check = request.json['password_check']
+        source_code = request.json['source_code']
+
+        if password != password_check:
+
+            response = {
+                'status': 'fail',
+                'message': 'Passwords do not match.'}
+            return jsonify(response)
+
+        new_user = User.register(name, email_address, password, source_code)
 
         if new_user:
             send_confirm_email_link(email_address)
+            create_all_starters(new_user.id)
             access_token = create_access_token(identity=new_user)
             response = {
                 'status': 'success',
@@ -220,7 +308,7 @@ def register_user_via_API():
 
         response = {
             'status': 'error',
-            'message': 'Inputs did not validate!'}
+            'message': 'Inputs did not validate.'}
         return jsonify(response)
 
 # -------------------------------------------------------------------
@@ -372,9 +460,12 @@ def get_user_start_information():
 
     response = {
         'current_text': user.current_text,
+        'first_login': user.first_login,
+        'is_email_confirmed': user.is_email_confirmed,
         'languages': languages,
         'last_login': user.last_login,
         'last_source_code': last_language,
+        'name': user.name,
         'user': user.email_address,
         'words_array': [word.serialize_and_components() for word in words]
     }
@@ -433,7 +524,7 @@ def get_users_last_language():
 
 @app.route('/api/vocab/languages', methods=['GET'])
 @cross_origin()
-@jwt_required()
+# @jwt_required()
 def get_all_languages():
 
     languages = Language.get_all_options()

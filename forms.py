@@ -7,6 +7,9 @@ from models import User
 PERMITTED_NAME_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqurstuvwxyz-_'. "
 PERMITTED_PASSWORD_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqurstuvwxyz1234567890!@#$%^&*()-_+=;:?"
 
+POS_CHOICES = [('adjective', 'adjective'), ('adverb', 'adverb'), ('article', 'article'), ('conjunction', 'conjunction'),
+               ('expression', 'expression'), ('noun', 'noun'), ('preposition', 'preposition'), ('verb', 'verb'), ('other', 'other')]
+
 
 class PermittedChars(object):
     def __init__(self, permitted_characters, message=None):
@@ -94,8 +97,9 @@ class VocabComponentForm(FlaskForm):
         csrf = False
 
     part_of_speech = SelectField("Part of speech",
-                                 choices=[('adjective', 'adjective'), ('adverb', 'adverb'), ('article', 'article'), ('conjunction', 'conjunction'), (
-                                     'noun', 'noun'), ('preposition', 'preposition'), ('verb', 'verb'), ('other', 'other')],
+                                 #  choices=[('adjective', 'adjective'), ('adverb', 'adverb'), ('article', 'article'), ('conjunction', 'conjunction'), (
+                                 #      'noun', 'noun'), ('preposition', 'preposition'), ('verb', 'verb'), ('other', 'other')],
+                                 choices=POS_CHOICES,
                                  validators=[InputRequired()])
     # variation = StringField("Variation of root word",
     #                         validators=[InputRequired()])
@@ -128,8 +132,9 @@ class VocabWordAndComponentForm(FlaskForm):
     definition = StringField("Definition",
                              validators=[Optional()])
     part_of_speech = SelectField("Part of speech",
-                                 choices=[('adjective', 'adjective'), ('adverb', 'adverb'), ('article', 'article'), ('conjunction', 'conjunction'), (
-                                     'noun', 'noun'), ('preposition', 'preposition'), ('verb', 'verb'), ('other', 'other')],
+                                 #  choices=[('adjective', 'adjective'), ('adverb', 'adverb'), ('article', 'article'), ('conjunction', 'conjunction'), (
+                                 #      'noun', 'noun'), ('preposition', 'preposition'), ('verb', 'verb'), ('other', 'other')],
+                                 choices=POS_CHOICES,
                                  validators=[InputRequired(message="Part of speech is required.")])
     synonyms = StringField("Synonyms",
                            validators=[Optional()])

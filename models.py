@@ -76,6 +76,7 @@ class User(db.Model):
         """Change password."""
         hashed = bcrypt.generate_password_hash(password, rounds=14)
         self.password = hashed.decode("utf8")
+        self.password_reset_token = None
         db.session.add(self)
         db.session.commit()
 
@@ -95,7 +96,6 @@ class User(db.Model):
 
     def update_last_login(self):
         """Update user's last login to now."""
-        # self.last_login = func.now()
         self.last_login = datetime.datetime.utcnow()
         db.session.add(self)
         db.session.commit()
@@ -121,13 +121,13 @@ class User(db.Model):
         return token_urlsafe(16)
 
     @ classmethod
-    def register(cls, name, email_address, password):
+    def register(cls, name, email_address, password, source_code='en'):
         """Register a new user to the database."""
         hashed = bcrypt.generate_password_hash(password, rounds=14)
         hashed_utf = hashed.decode("utf8")
 
         new_user = cls(id=generate_random_string(10, cls.get_by_id), name=name, email_address=email_address.lower(
-        ), password=hashed_utf, api_token=cls.generate_api_token(), email_confirm_token=cls.generate_api_token())
+        ), password=hashed_utf, last_language=source_code, api_token=cls.generate_api_token(), email_confirm_token=cls.generate_api_token())
         db.session.add(new_user)
         db.session.commit()
         return new_user
@@ -233,9 +233,6 @@ class VocabWord(db.Model):
     source_code = db.Column(db.String(5), db.ForeignKey('languages.id'))
     root = db.Column(db.Text, nullable=False)
     translation = db.Column(db.Text, nullable=True)
-    # definition = db.Column(db.Text, nullable=True)
-    # synonyms = db.Column(db.Text, nullable=True)
-    # examples = db.Column(db.Text, nullable=True)
     notes = db.Column(db.Text, nullable=True)
 
     components = db.relationship('VocabWordComponent', backref='root_word',
@@ -248,9 +245,6 @@ class VocabWord(db.Model):
             'source_code': self.source_code,
             'root': self.root,
             'translation': self.translation,
-            # 'definition': self.definition,
-            # 'synonyms': self.synonyms,
-            # 'examples': self.examples,
             'notes': self.notes,
             'components': [component.id for component in self.components]
         }
@@ -262,9 +256,6 @@ class VocabWord(db.Model):
             'source_code': self.source_code,
             'root': self.root,
             'translation': self.translation,
-            # 'definition': self.definition,
-            # 'synonyms': self.synonyms,
-            # 'examples': self.examples,
             'notes': self.notes,
             'components': [component.serialize() for component in self.components]
         }
