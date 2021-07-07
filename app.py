@@ -268,6 +268,37 @@ def login_user_via_API():
             'status': 'error',
             'message': 'Inputs did not validate!'}
         return jsonify(response)
+# -------------------------------------------------------------------
+
+
+@app.route('/api/auth/logout', methods=['GET'])
+@cross_origin()
+@jwt_required()
+def logout_user_via_API():
+
+    current_user = get_jwt_identity()
+    user = User.get_by_id(current_user)
+
+    if user == None:
+        response = {
+            'status': 'error',
+            'message': 'There is no user associated with the provided web token.'}
+        return jsonify(response)
+
+    user.update_last_login()
+
+    if user:
+        user.update_last_login()
+
+        if user.first_login == True:
+            user.update_first_login()
+
+        response = {
+            'status': 'success',
+            'message': f"{user.email_address} has been logged out successfully.",
+            'last_login': user.last_login}
+        return jsonify(response)
+
 
 # -------------------------------------------------------------------
 
