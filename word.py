@@ -4,7 +4,7 @@ import requests
 import sys
 import json
 import os
-from secret import GOOGLE_LANGUAGE_KEY, WORDS_API_KEY
+# from secret import GOOGLE_LANGUAGE_KEY, WORDS_API_KEY
 
 # GOOGLE_LANGUAGE_KEY = os.environ.get('GOOGLE_LANGUAGE_KEY')
 # WORDS_API_KEY = os.environ.get('WORDS_API_KEY')
@@ -12,8 +12,8 @@ from secret import GOOGLE_LANGUAGE_KEY, WORDS_API_KEY
 
 def query_translation_api(source_word, source_code, translate_code):
     API_BASE_ULR = 'https://translation.googleapis.com/language/translate/v2'
-    # API_KEY = os.environ.get('GOOGLE_LANGUAGE_KEY')
-    API_KEY = GOOGLE_LANGUAGE_KEY
+    API_KEY = os.environ.get('GOOGLE_LANGUAGE_KEY')
+    # API_KEY = GOOGLE_LANGUAGE_KEY
 
     url = f"{API_BASE_ULR}?key={API_KEY}"
     headers = {'Content-Type': 'application/json'}
@@ -31,8 +31,8 @@ def query_translation_api(source_word, source_code, translate_code):
 
 def query_dictionary_api(word):
     API_BASE_ULR = 'https://wordsapiv1.p.rapidapi.com/words'
-    # API_KEY = os.environ.get('WORDS_API_KEY')
-    API_KEY = WORDS_API_KEY
+    API_KEY = os.environ.get('WORDS_API_KEY')
+    # API_KEY = WORDS_API_KEY
 
     url = f"{API_BASE_ULR}/{word}"
     headers = {
