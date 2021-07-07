@@ -12,7 +12,6 @@ import os
 from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required, JWTManager
 from flask_cors import CORS, cross_origin
 from secrets import token_urlsafe
-# from secret import SECRET_KEY, JWT_SECRET_KEY, DATABASE_URL, GOOGLE_LANGUAGE_KEY, WORDS_API_KEY, MAIL_PASSWORD, MAIL_PORT, MAIL_SERVER, MAIL_USE_TLS, MAIL_USERNAME, REACT_PRODUCTION_DOMAIN
 
 app = Flask(__name__)
 
@@ -207,7 +206,7 @@ def create_all_starters(owner_id):
 #####################################################################
 
 
-# @app.route('/api/auth/starters', methods=['GET'])
+# @app.route('/auth/starters', methods=['GET'])
 # @cross_origin()
 # @jwt_required()
 # def create_starter_words_via_API():
@@ -220,7 +219,7 @@ def create_all_starters(owner_id):
 # -------------------------------------------------------------------
 
 
-@app.route('/api/auth/login', methods=['POST'])
+@app.route('/auth/login', methods=['POST'])
 @cross_origin()
 def login_user_via_API():
 
@@ -266,7 +265,7 @@ def login_user_via_API():
 # -------------------------------------------------------------------
 
 
-@app.route('/api/auth/logout', methods=['GET'])
+@app.route('/auth/logout', methods=['GET'])
 @cross_origin()
 @jwt_required()
 def logout_user_via_API():
@@ -298,7 +297,7 @@ def logout_user_via_API():
 # -------------------------------------------------------------------
 
 
-@app.route('/api/auth/register', methods=['POST'])
+@app.route('/auth/register', methods=['POST'])
 @cross_origin()
 def register_user_via_API():
 
@@ -340,7 +339,7 @@ def register_user_via_API():
 # -------------------------------------------------------------------
 
 
-@app.route('/api/confirm-email', methods=['POST'])
+@app.route('/confirm-email', methods=['POST'])
 @cross_origin()
 def confirm_email_address_via_API():
     token = request.json['token']
@@ -376,7 +375,7 @@ def confirm_email_address_via_API():
 # -------------------------------------------------------------------
 
 
-@app.route('/api/send-confirm-email', methods=['POST'])
+@app.route('/send-confirm-email', methods=['POST'])
 @cross_origin()
 def send_confirm_email_via_API():
     email_address = request.json['email_address']
@@ -386,7 +385,7 @@ def send_confirm_email_via_API():
 # -------------------------------------------------------------------
 
 
-@app.route('/api/password-reset', methods=['POST'])
+@app.route('/password-reset', methods=['POST'])
 @cross_origin()
 def password_reset_via_API():
     token = request.json['token']
@@ -422,7 +421,7 @@ def password_reset_via_API():
 # -------------------------------------------------------------------
 
 
-@app.route('/api/send-password-reset', methods=['POST'])
+@app.route('/send-password-reset', methods=['POST'])
 @cross_origin()
 def send_password_reset_via_API():
     email_address = request.json['email_address']
@@ -432,7 +431,7 @@ def send_password_reset_via_API():
 # -------------------------------------------------------------------
 
 
-@app.route('/api/vocab/translate/<word>/<source_code>/<translate_code>', methods=['GET'])
+@app.route('/vocab/translate/<word>/<source_code>/<translate_code>', methods=['GET'])
 @cross_origin()
 @jwt_required()
 def translate(word, source_code, translate_code):
@@ -445,7 +444,7 @@ def translate(word, source_code, translate_code):
 
 # -------------------------------------------------------------------
 
-@app.route('/api/vocab/dictionary/<word>', methods=['GET'])
+@app.route('/vocab/dictionary/<word>', methods=['GET'])
 @jwt_required()
 def search_dictionary(word):
 
@@ -456,7 +455,7 @@ def search_dictionary(word):
 # -------------------------------------------------------------------
 
 
-@app.route('/api/variations/<component_id>', methods=['GET'])
+@app.route('/variations/<component_id>', methods=['GET'])
 @jwt_required()
 def get_variation_data_by_api(component_id):
 
@@ -471,7 +470,7 @@ def get_variation_data_by_api(component_id):
 # -------------------------------------------------------------------
 
 
-@app.route('/api/vocab/start', methods=['GET'])
+@app.route('/vocab/start', methods=['GET'])
 @cross_origin()
 @jwt_required()
 def get_user_start_information():
@@ -501,7 +500,7 @@ def get_user_start_information():
 # -------------------------------------------------------------------
 
 
-@app.route('/api/vocab/words/<source_code>', methods=['GET'])
+@app.route('/vocab/words/<source_code>', methods=['GET'])
 @cross_origin()
 @jwt_required()
 def get_users_language_words(source_code):
@@ -517,7 +516,7 @@ def get_users_language_words(source_code):
 # -------------------------------------------------------------------
 
 
-@app.route('/api/vocab/last/<source_code>', methods=['GET'])
+@app.route('/vocab/last/<source_code>', methods=['GET'])
 @cross_origin()
 @jwt_required()
 def update_users_last_language(source_code):
@@ -535,7 +534,7 @@ def update_users_last_language(source_code):
 # -------------------------------------------------------------------
 
 
-@app.route('/api/vocab/last', methods=['GET'])
+@app.route('/vocab/last', methods=['GET'])
 @cross_origin()
 @jwt_required()
 def get_users_last_language():
@@ -548,7 +547,7 @@ def get_users_last_language():
 # -------------------------------------------------------------------
 
 
-@app.route('/api/vocab/languages', methods=['GET'])
+@app.route('/vocab/languages', methods=['GET'])
 @cross_origin()
 # @jwt_required()
 def get_all_languages():
@@ -560,7 +559,7 @@ def get_all_languages():
     # -------------------------------------------------------------------
 
 
-@app.route('/api/vocab/renderedtext', methods=['PUT'])
+@app.route('/vocab/renderedtext', methods=['PUT'])
 @cross_origin()
 @jwt_required()
 def save_input_text_by_api():
@@ -583,7 +582,7 @@ def save_input_text_by_api():
 # -------------------------------------------------------------------
 
 
-@app.route('/api/vocab/words/new', methods=['POST'])
+@app.route('/vocab/words/new', methods=['POST'])
 @cross_origin()
 @jwt_required()
 def add_new_word_by_api():
@@ -622,7 +621,7 @@ def add_new_word_by_api():
 # -------------------------------------------------------------------
 
 
-@app.route('/api/vocab/words/<id>', methods=['PUT'])
+@app.route('/vocab/words/<id>', methods=['PUT'])
 @cross_origin()
 @jwt_required()
 def edit_word_by_api(id):
@@ -668,7 +667,7 @@ def edit_word_by_api(id):
 # -------------------------------------------------------------------
 
 
-@app.route('/api/vocab/words/<id>', methods=['DELETE'])
+@app.route('/vocab/words/<id>', methods=['DELETE'])
 @cross_origin()
 @jwt_required()
 def delete_word_by_api(id):
@@ -698,7 +697,7 @@ def delete_word_by_api(id):
 # -------------------------------------------------------------------
 
 
-@app.route('/api/vocab/variations/new', methods=['POST'])
+@app.route('/vocab/variations/new', methods=['POST'])
 @jwt_required()
 def add_new_variation_by_api():
 
@@ -739,7 +738,7 @@ def add_new_variation_by_api():
 # -------------------------------------------------------------------
 
 
-@app.route('/api/vocab/variations/<id>', methods=['PUT'])
+@app.route('/vocab/variations/<id>', methods=['PUT'])
 @jwt_required()
 def edit_variation_by_api(id):
 
@@ -787,7 +786,7 @@ def edit_variation_by_api(id):
 # -------------------------------------------------------------------
 
 
-@app.route('/api/vocab/variations/<id>', methods=['DELETE'])
+@app.route('/vocab/variations/<id>', methods=['DELETE'])
 @jwt_required()
 def delete_variation_by_api(id):
 
