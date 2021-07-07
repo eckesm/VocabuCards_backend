@@ -17,37 +17,58 @@ from flask_cors import CORS, cross_origin
 from secrets import token_urlsafe
 # from secret import SECRET_KEY, JWT_SECRET_KEY, DATABASE_URL, GOOGLE_LANGUAGE_KEY, WORDS_API_KEY, MAIL_PASSWORD, MAIL_PORT, MAIL_SERVER, MAIL_USE_TLS, MAIL_USERNAME, REACT_PRODUCTION_DOMAIN
 
-app = Flask(__name__)
+# app = Flask(__name__)
+
+
+def create_app():
+
+    app = Flask(__name__, instance_relative_config=False)
+    if app.config["ENV"] == "production":
+        app.config.from_object("config.ProductionConfig")
+    else:
+        app.config.from_object("config.DevelopmentConfig")
+
+    db.init_app(app)
+
+    # with app.app_context():
+    # cors = CORS(app)
+    # mail = Mail(app)
+    # jwt = JWTManager(app)
+    # toolbar = DebugToolbarExtension(app)
+
+    # return app
+    return app
+
+
+app = create_app()
+
 cors = CORS(app)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
-    'DATABASE_URL')
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
-app.config['SQLALCHEMY_ECHO'] = False
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
-app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY')
-app.config['GOOGLE_LANGUAGE_KEY'] = os.environ.get(
-    'GOOGLE_LANGUAGE_KEY')
-app.config['WORDS_API_KEY'] = os.environ.get('WORDS_API_KEY')
+# app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
+#     'DATABASE_URL')
+# app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
+# app.config['SQLALCHEMY_ECHO'] = False
+# app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+# app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
+# app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY')
+# app.config['GOOGLE_LANGUAGE_KEY'] = os.environ.get(
+#     'GOOGLE_LANGUAGE_KEY')
+# app.config['WORDS_API_KEY'] = os.environ.get('WORDS_API_KEY')
 
-app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
-app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
-app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER')
-app.config['MAIL_PORT'] = os.environ.get('MAIL_PORT')
-app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS')
+# app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+# app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+# app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER')
+# app.config['MAIL_PORT'] = os.environ.get('MAIL_PORT')
+# app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS')
 
-app.config['REACT_PRODUCTION_DOMAIN'] = os.environ.get(
-    'REACT_PRODUCTION_DOMAIN')
+# app.config['REACT_PRODUCTION_DOMAIN'] = os.environ.get(
+#     'REACT_PRODUCTION_DOMAIN')
 
 react_app_url = app.config["REACT_PRODUCTION_DOMAIN"]
 
 mail = Mail(app)
-
-
 jwt = JWTManager(app)
-
-connect_db(app)
+# connect_db(app)
 toolbar = DebugToolbarExtension(app)
 
 
