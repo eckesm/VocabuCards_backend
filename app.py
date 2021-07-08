@@ -244,7 +244,7 @@ def login_user_via_API():
 
         if user:
             access_token = create_access_token(identity=user)
-            last_login = user.last_login
+            # last_login = user.last_login
             user.update_last_login()
             if user.first_login == True:
                 user.update_first_login()
@@ -252,8 +252,9 @@ def login_user_via_API():
             response = {
                 'status': 'success',
                 'access_token': access_token,
-                'message': f"Credentials for {email_address} were authenticated.",
-                'last_login': last_login}
+                'message': f"Credentials for {email_address} were authenticated."
+                # 'last_login': user.last_login
+            }
             return jsonify(response)
 
     else:
@@ -411,6 +412,7 @@ def password_reset_via_API():
         else:
 
             user.change_password(password)
+            user.confirm_email_address()
 
             response = {
                 'status': 'success',
