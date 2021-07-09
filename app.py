@@ -277,14 +277,14 @@ def refresh_access_token():
 # -------------------------------------------------------------------
 
 
-@app.route('/test-access-token', methods=['GET'])
-@cross_origin()
-@jwt_required
-def refresh_access_token():
+# @app.route('/test-access-token', methods=['GET'])
+# @cross_origin()
+# @jwt_required
+# def refresh_access_token():
 
-    response = {
-        'status': 'success', }
-    return jsonify(response)
+#     response = {
+#         'status': 'success', }
+#     return jsonify(response)
 
 # -------------------------------------------------------------------
 

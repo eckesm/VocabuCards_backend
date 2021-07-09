@@ -4,8 +4,6 @@ import requests
 import sys
 import json
 import os
-# from secret import GOOGLE_LANGUAGE_KEY, WORDS_API_KEY
-
 
 def query_translation_api(source_word, source_code, translate_code):
     API_BASE_ULR = 'https://translation.googleapis.com/language/translate/v2'
