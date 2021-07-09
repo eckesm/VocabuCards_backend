@@ -9,9 +9,10 @@ import requests
 import sys
 import json
 import os
-from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required, JWTManager
+from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt, get_jwt_identity, jwt_required, JWTManager, set_access_cookies, unset_jwt_cookies
 from flask_cors import CORS, cross_origin
 from secrets import token_urlsafe
+from datetime import datetime, timedelta, timezone
 
 app = Flask(__name__)
 
@@ -21,7 +22,13 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 app.config['SQLALCHEMY_ECHO'] = False
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
+
+# app.config["JWT_COOKIE_SECURE"] = False
+# app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
 app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY')
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)
+app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=30)
+
 app.config['GOOGLE_LANGUAGE_KEY'] = os.environ.get(
     'GOOGLE_LANGUAGE_KEY')
 app.config['WORDS_API_KEY'] = os.environ.get('WORDS_API_KEY')
@@ -47,6 +54,37 @@ connect_db(app)
 #####################################################################
 # ---------------------------- Users -------------------------------#
 #####################################################################
+
+# @app.after_request
+# def refresh_expiring_jwts(response):
+#     print('-----> @app.after_request')
+#     try:
+#         exp_timestamp = get_jwt()["exp"]
+#         now = datetime.now(timezone.utc)
+#         target_timestamp = datetime.timestamp(now + timedelta(minutes=30))
+#         if target_timestamp > exp_timestamp:
+#             access_token = create_access_token(identity=get_jwt_identity())
+#             set_access_cookies(response, access_token)
+#         return response
+#     except (RuntimeError, KeyError):
+#         # Case where there is not a valid JWT. Just return the original respone
+#         return response
+
+# -------------------------------------------------------------------
+
+
+@jwt.expired_token_loader
+def my_expired_token_callback(jwt_header, jwt_payload):
+    print('-----> @jwt.expired_token_loader')
+
+    response = {
+        'status': "expired_token",
+        'message': "The provided access token is expired."
+    }
+    return jsonify(response), 401
+
+# -------------------------------------------------------------------
+
 
 @jwt.user_identity_loader
 def user_identity_lookup(user):
@@ -218,6 +256,38 @@ def create_all_starters(owner_id):
 
 # -------------------------------------------------------------------
 
+@app.route('/refresh', methods=['GET'])
+@cross_origin()
+@jwt_required(refresh=True)
+def refresh_access_token():
+
+    refresh_user = get_jwt_identity()
+    user = User.get_by_id(refresh_user)
+    access_token = create_access_token(identity=user)
+
+    now = datetime.now(timezone.utc)
+    response = {
+        'status': 'success',
+        'access_token': access_token,
+        'access_token_exp': datetime.timestamp(now+timedelta(hours=1)),
+        'message': "New access token created successfully."
+    }
+    return jsonify(response)
+
+# -------------------------------------------------------------------
+
+
+@app.route('/test-access-token', methods=['GET'])
+@cross_origin()
+@jwt_required
+def refresh_access_token():
+
+    response = {
+        'status': 'success', }
+    return jsonify(response)
+
+# -------------------------------------------------------------------
+
 
 @app.route('/auth/login', methods=['POST'])
 @cross_origin()
@@ -244,14 +314,19 @@ def login_user_via_API():
 
         if user:
             access_token = create_access_token(identity=user)
-            # last_login = user.last_login
+            refresh_token = create_refresh_token(identity=user)
             user.update_last_login()
             if user.first_login == True:
                 user.update_first_login()
 
+            now = datetime.now(timezone.utc)
+
             response = {
                 'status': 'success',
                 'access_token': access_token,
+                'refresh_token': refresh_token,
+                'access_token_exp': datetime.timestamp(now+timedelta(hours=1)),
+                'refresh_token_exp': datetime.timestamp(now+timedelta(days=30)),
                 'message': f"Credentials for {email_address} were authenticated."
                 # 'last_login': user.last_login
             }
