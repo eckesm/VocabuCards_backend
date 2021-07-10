@@ -2,7 +2,7 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, FloatField, BooleanField, IntegerField, RadioField, SelectField, PasswordField, TextAreaField, FileField
 from wtforms.validators import ValidationError, InputRequired, Optional, Email, EqualTo, URL, Length
 import email_validator
-from models import User
+from models import User, Language
 
 PERMITTED_NAME_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqurstuvwxyz-_'. "
 PERMITTED_PASSWORD_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqurstuvwxyz1234567890!@#$%^&*()-_+=;:?"
@@ -70,6 +70,16 @@ class AddUserForm(FlaskForm):
                                  min=8, max=40, message="Must be between 8 and 40 characters."),
                              PermittedChars(permitted_characters=PERMITTED_PASSWORD_CHARS, message="Password can only contain letters, numbers, and !@#$%^&*()-_+=;:?")])
 
+    password_check = PasswordField("Password", validators=[
+        InputRequired(message="Input required."),
+        Length(
+            min=8, max=40, message="Must be between 8 and 40 characters."),
+        PermittedChars(permitted_characters=PERMITTED_PASSWORD_CHARS, message="Password can only contain letters, numbers, and !@#$%^&*()-_+=;:?")])
+
+    # source_code = SelectField("Starting language",
+    #                           choices=Language.get_all_options(),
+    #                           validators=[Optional()])
+
 
 class VocabWordForm(FlaskForm):
     """Form for vocabulary words."""
@@ -82,11 +92,6 @@ class VocabWordForm(FlaskForm):
     word = StringField("Word *", validators=[InputRequired()])
     translation = StringField("Translation",
                               validators=[Optional()])
-    # definition = StringField("Definition",
-    #                          validators=[Optional()])
-    # synonyms = StringField("Synonyms",
-    #                        validators=[Optional()])
-    # examples = TextAreaField("Examples", validators=[Optional()])
     notes = TextAreaField("Notes", validators=[Optional()])
 
 
@@ -97,12 +102,8 @@ class VocabComponentForm(FlaskForm):
         csrf = False
 
     part_of_speech = SelectField("Part of speech",
-                                 #  choices=[('adjective', 'adjective'), ('adverb', 'adverb'), ('article', 'article'), ('conjunction', 'conjunction'), (
-                                 #      'noun', 'noun'), ('preposition', 'preposition'), ('verb', 'verb'), ('other', 'other')],
                                  choices=POS_CHOICES,
                                  validators=[InputRequired()])
-    # variation = StringField("Variation of root word",
-    #                         validators=[InputRequired()])
     word = StringField(
         "Word *", validators=[InputRequired(message="Word is required.")])
     translation = StringField("Translation",
@@ -132,8 +133,6 @@ class VocabWordAndComponentForm(FlaskForm):
     definition = StringField("Definition",
                              validators=[Optional()])
     part_of_speech = SelectField("Part of speech",
-                                 #  choices=[('adjective', 'adjective'), ('adverb', 'adverb'), ('article', 'article'), ('conjunction', 'conjunction'), (
-                                 #      'noun', 'noun'), ('preposition', 'preposition'), ('verb', 'verb'), ('other', 'other')],
                                  choices=POS_CHOICES,
                                  validators=[InputRequired(message="Part of speech is required.")])
     synonyms = StringField("Synonyms",
