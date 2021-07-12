@@ -188,7 +188,7 @@ STARTER_WORDS = {
         {
             'root': 'hund',
             'translation': 'dog',
-            'notes': 'mannens bästa vän.',
+            'notes': 'en noun with -arna ending.',
             'variations': [
                 {
                     'part_of_speech': 'noun',
@@ -196,9 +196,8 @@ STARTER_WORDS = {
                     'translation': 'a dog',
                     'description': 'singular, indefinite',
                     'definition': 'a domestic mammal that is related to the wolves and foxes.',
-                    'synonyms': 'canine, doggy (or doggie), hound, pooch, tyke (also tike)',
-                    'examples': 'a dog who needs a loving home',
-                    'notes': 'en noun'
+                    'synonyms': 'canine, hound, pooch',
+                    'examples': 'a dog who needs a loving home'
                 },
                 {
                     'part_of_speech': 'noun',
@@ -207,8 +206,25 @@ STARTER_WORDS = {
                     'description': 'singular, definite',
                     'definition': '',
                     'synonyms': '',
-                    'examples': '',
-                    'notes': 'en noun'
+                    'examples': ''
+                },
+                {
+                    'part_of_speech': 'noun',
+                    'variation': 'hundar',
+                    'translation': 'dogs',
+                    'description': 'plural, indefinite',
+                    'definition': '',
+                    'synonyms': '',
+                    'examples': ''
+                },
+                {
+                    'part_of_speech': 'noun',
+                    'variation': 'hundarna',
+                    'translation': 'the dogs',
+                    'description': 'plural, definite',
+                    'definition': '',
+                    'synonyms': '',
+                    'examples': ''
                 }
             ]
         }
@@ -222,9 +238,9 @@ def create_starter_word(owner_id, source_code, root, translation, notes):
     return new_vocab_word
 
 
-def create_starter_component(root_id, owner_id, part_of_speech, variation, translation, description, definition, synonyms, examples, notes):
+def create_starter_component(root_id, owner_id, part_of_speech, variation, translation, description, definition, synonyms, examples):
     new_variation = VocabWordComponent.add_variation(
-        root_id, owner_id, part_of_speech, variation, translation, description, definition, synonyms, examples, notes)
+        root_id, owner_id, part_of_speech, variation, translation, description, definition, synonyms, examples, '')
     return new_variation
 
 
@@ -235,7 +251,7 @@ def create_all_starters(owner_id):
                 owner_id, source_code, word['root'], word['translation'], word['notes'])
             for variation in word['variations']:
                 create_starter_component(new_word.id, owner_id, variation['part_of_speech'], variation['variation'], variation['translation'],
-                                         variation['description'], variation['definition'], variation['synonyms'], variation['examples'], variation['notes'])
+                                         variation['description'], variation['definition'], variation['synonyms'], variation['examples'])
     return {
         'status': 'success',
         'message': 'Successfully created starter vocabulary words.'
@@ -292,11 +308,11 @@ def refresh_access_token():
 # -------------------------------------------------------------------
 
 
-# @app.route('/news/<source_code>', methods=['GET'])
-# @cross_origin()
-# def getArticleUnprotected(source_code):
-#     article = getArticleFromRSS(source_code)
-#     return(jsonify(article))
+@app.route('/news/<source_code>', methods=['GET'])
+@cross_origin()
+def getArticleUnprotected(source_code):
+    article = getArticleFromRSS(source_code)
+    return(jsonify(article))
 
 
 @app.route('/get-news-article/<source_code>', methods=['GET'])

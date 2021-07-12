@@ -5,9 +5,17 @@ import random
 from sqlalchemy.sql.expression import false
 
 RSS_NEWS_SOURCES = {
+    'es': {
+        'url': 'https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/portada',
+        'source': 'El País'
+    },
     'fr': {
         'url': 'https://www.lemonde.fr/rss/en_continu.xml',
         'source': 'Le Monde'
+    },
+    'ge': {
+        'url': 'http://rss.focus.de/fol/XML/rss_folnews.xml',
+        'source': 'Focus    '
     },
     'sv': {
         'url': 'https://api.sr.se/api/rss/program/4916',
@@ -31,14 +39,19 @@ def getArticleFromRSS(source_code):
     entryNum = random.randint(0, entriesCount)
     entry = NewsFeed.entries[entryNum]
 
-    if source_code == 'sv':
+    print(entriesCount)
+    print(entryNum)
+
+    # return (entry)
+
+    if source_code == 'es':
         article = {
             'author': entry['author'],
             'link': entry['link'],
             'pubDate': entry['published'],
-            'text': cleanhtml(entry['content'][0]['value']),
+            'text': cleanhtml(entry['content'][1]['value']),
             'title': entry['title'],
-            'fullText': True
+            'fullText': False
         }
         return(article)
 
@@ -50,6 +63,28 @@ def getArticleFromRSS(source_code):
             'text': cleanhtml(entry['summary']),
             'title': entry['title'],
             'fullText': False
+        }
+        return(article)
+
+    if source_code == 'ge':
+        article = {
+            'author': RSS_NEWS_SOURCES[source_code]['source'],
+            'link': entry['link'],
+            'pubDate': entry['published'],
+            'text': cleanhtml(entry['content'][1]['value']),
+            'title': entry['title'],
+            'fullText': False
+        }
+        return(article)
+
+    if source_code == 'sv':
+        article = {
+            'author': entry['author'],
+            'link': entry['link'],
+            'pubDate': entry['published'],
+            'text': cleanhtml(entry['content'][0]['value']),
+            'title': entry['title'],
+            'fullText': True
         }
         return(article)
 
