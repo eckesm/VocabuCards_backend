@@ -1,3 +1,4 @@
+
 from flask import Flask, render_template, redirect, session, flash, g, request, jsonify, url_for, make_response
 # from functools import wraps
 from flask_debugtoolbar import DebugToolbarExtension
@@ -5,7 +6,8 @@ from flask_mail import Mail, Message
 from models import db, connect_db, Language, User, VocabWord, VocabWordComponent
 from forms import LoginForm, AddUserForm, VocabWordForm, VocabComponentForm, VocabWordAndComponentForm
 from word import TranslationWord, DictionaryWord
-import requests
+from articles import getArticleFromRSS, RSS_NEWS_SOURCES
+# import requests
 import sys
 import json
 import os
@@ -13,6 +15,7 @@ from flask_jwt_extended import create_access_token, create_refresh_token, get_jw
 from flask_cors import CORS, cross_origin
 from secrets import token_urlsafe
 from datetime import datetime, timedelta, timezone
+
 
 app = Flask(__name__)
 
@@ -287,6 +290,21 @@ def refresh_access_token():
 #     return jsonify(response)
 
 # -------------------------------------------------------------------
+
+
+# @app.route('/news/<source_code>', methods=['GET'])
+# @cross_origin()
+# def getArticleUnprotected(source_code):
+#     article = getArticleFromRSS(source_code)
+#     return(jsonify(article))
+
+
+@app.route('/get-news-article/<source_code>', methods=['GET'])
+@cross_origin()
+@jwt_required()
+def getArticle(source_code):
+    article = getArticleFromRSS(source_code)
+    return(jsonify(article))
 
 
 @app.route('/login', methods=['POST'])
@@ -570,6 +588,7 @@ def get_user_start_information():
         'last_login': user.last_login,
         'last_source_code': last_language,
         'name': user.name,
+        'news_sources': RSS_NEWS_SOURCES,
         'user': user.email_address,
         'words_array': [word.serialize_and_components() for word in words]
     }
