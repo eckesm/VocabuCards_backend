@@ -68,6 +68,7 @@ class User(db.Model):
     last_login = db.Column(db.DateTime, nullable=False,
                            server_default=func.now())
     current_text = db.Column(db.Text, nullable=True)
+    accessed_languages = db.Column(db.Text(), default='[]')
 
     words = db.relationship('VocabWord', backref='owner',
                             cascade='all, delete-orphan')

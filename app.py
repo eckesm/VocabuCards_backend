@@ -4,6 +4,7 @@ from flask import Flask, render_template, redirect, session, flash, g, request, 
 from flask_debugtoolbar import DebugToolbarExtension
 from flask_mail import Mail, Message
 from models import db, connect_db, Language, User, VocabWord, VocabWordComponent
+from starter_cards import create_all_language_starters
 from forms import LoginForm, AddUserForm, VocabWordForm, VocabComponentForm, VocabWordAndComponentForm
 from word import TranslationWord, DictionaryWord
 from articles import getArticleFromRSS, RSS_NEWS_SOURCES
@@ -111,9 +112,9 @@ def send_confirm_email_link(email_address):
 
     if user == None:
         return {
-            'status': 'fail',
+            'email_address': email_address,
             'message': f"The email address {email_address} is not associated with an account.",
-            'email_address': email_address
+            'status': 'fail'
         }
 
     else:
@@ -135,9 +136,9 @@ def send_confirm_email_link(email_address):
         # flash('Please check your email for a link to confirm your email address.', 'info')
 
         return {
-            'status': 'success',
+            'email_address': email_address,
             'message': 'Please check your email for a link to confirm your email address.',
-            'email_address': email_address
+            'status': 'success'
         }
 
 
@@ -180,85 +181,6 @@ def send_password_reset_link(email_address):
 
 
 #####################################################################
-# -------------------- Create Starter Words ----------------------- #
-#####################################################################
-
-STARTER_WORDS = {
-    'sv': [
-        {
-            'root': 'hund',
-            'translation': 'dog',
-            'notes': 'en noun with -arna ending.',
-            'variations': [
-                {
-                    'part_of_speech': 'noun',
-                    'variation': 'en hund',
-                    'translation': 'a dog',
-                    'description': 'singular, indefinite',
-                    'definition': 'a domestic mammal that is related to the wolves and foxes.',
-                    'synonyms': 'canine, hound, pooch',
-                    'examples': 'a dog who needs a loving home'
-                },
-                {
-                    'part_of_speech': 'noun',
-                    'variation': 'hunden',
-                    'translation': 'the dog',
-                    'description': 'singular, definite',
-                    'definition': '',
-                    'synonyms': '',
-                    'examples': ''
-                },
-                {
-                    'part_of_speech': 'noun',
-                    'variation': 'hundar',
-                    'translation': 'dogs',
-                    'description': 'plural, indefinite',
-                    'definition': '',
-                    'synonyms': '',
-                    'examples': ''
-                },
-                {
-                    'part_of_speech': 'noun',
-                    'variation': 'hundarna',
-                    'translation': 'the dogs',
-                    'description': 'plural, definite',
-                    'definition': '',
-                    'synonyms': '',
-                    'examples': ''
-                }
-            ]
-        }
-    ]
-}
-
-
-def create_starter_word(owner_id, source_code, root, translation, notes):
-    new_vocab_word = VocabWord.add_vocab_word(
-        owner_id, source_code, root, translation, notes)
-    return new_vocab_word
-
-
-def create_starter_component(root_id, owner_id, part_of_speech, variation, translation, description, definition, synonyms, examples):
-    new_variation = VocabWordComponent.add_variation(
-        root_id, owner_id, part_of_speech, variation, translation, description, definition, synonyms, examples, '')
-    return new_variation
-
-
-def create_all_starters(owner_id):
-    for source_code, words in STARTER_WORDS.items():
-        for word in words:
-            new_word = create_starter_word(
-                owner_id, source_code, word['root'], word['translation'], word['notes'])
-            for variation in word['variations']:
-                create_starter_component(new_word.id, owner_id, variation['part_of_speech'], variation['variation'], variation['translation'],
-                                         variation['description'], variation['definition'], variation['synonyms'], variation['examples'])
-    return {
-        'status': 'success',
-        'message': 'Successfully created starter vocabulary words.'
-    }
-
-
-#####################################################################
 # ------------------------- API Routes -----------------------------#
 #####################################################################
 
@@ -292,18 +214,6 @@ def refresh_access_token():
         'message': "New access token created successfully."
     }
     return jsonify(response)
-
-# -------------------------------------------------------------------
-
-
-# @app.route('/test-access-token', methods=['GET'])
-# @cross_origin()
-# @jwt_required
-# def refresh_access_token():
-
-#     response = {
-#         'status': 'success', }
-#     return jsonify(response)
 
 # -------------------------------------------------------------------
 
@@ -430,13 +340,17 @@ def register_user_via_API():
         new_user = User.register(name, email_address, password, source_code)
 
         if new_user:
-            send_confirm_email_link(email_address)
-            create_all_starters(new_user.id)
+            confirmation_email = send_confirm_email_link(email_address)
+            starter_words = create_all_language_starters(
+                new_user.id, source_code)
             access_token = create_access_token(identity=new_user)
             response = {
-                'status': 'success',
                 'access_token': access_token,
-                'message': f"Welcome, {name}!  Credentials for {email_address} were created successfully."}
+                'confirmation_email': confirmation_email,
+                'message': f"Welcome, {name}!  Credentials for {email_address} were created successfully.",
+                'starter_words': starter_words,
+                'status': 'success'
+            }
             return jsonify(response)
 
     else:
@@ -638,25 +552,26 @@ def update_users_last_language(source_code):
     current_user = get_jwt_identity()
     user = User.get_by_id(current_user)
 
+    accessed_languages = json.loads(user.accessed_languages)
+    print(accessed_languages)
+
+    # accessed_languages = []
+    # user.accessed_languages = json.dumps(accessed_languages)
+    # db.session.commit()
+
     if user.last_language != source_code:
         user.update_current_text(None)
+
+    if source_code not in accessed_languages:
+        accessed_languages.append(source_code)
+        user.accessed_languages = json.dumps(accessed_languages)
+        db.session.commit()
+        create_all_language_starters(
+            user.id, source_code)
 
     user.update_last_language(source_code)
 
     return jsonify(user.last_language)
-
-# -------------------------------------------------------------------
-
-
-# @app.route('/last', methods=['GET'])
-# @cross_origin()
-# @jwt_required()
-# def get_users_last_language():
-
-#     current_user = get_jwt_identity()
-#     user = User.get_by_id(current_user)
-
-#     return jsonify(user.last_language)
 
 # -------------------------------------------------------------------
 
@@ -670,7 +585,7 @@ def get_all_languages():
 
     return jsonify(languages)
 
-    # -------------------------------------------------------------------
+# -------------------------------------------------------------------
 
 
 @app.route('/renderedtext', methods=['PUT'])
