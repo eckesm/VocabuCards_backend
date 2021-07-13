@@ -151,7 +151,8 @@ def send_password_reset_link(email_address):
 
     if user == None:
         return {
-            'status': 'fail',
+            'status': 'error',
+            'title': 'Error!',
             'message': f"The email address {email_address} is not associated with an account.",
             'email_address': email_address
         }
@@ -175,6 +176,7 @@ def send_password_reset_link(email_address):
 
         return {
             'status': 'success',
+            'title': 'Email Sent!',
             'message': 'Please check your email for a link to reset your password.',
             'email_address': email_address
         }
@@ -246,14 +248,15 @@ def login_user_via_API():
 
         if user == None:
             response = {
-                'status': 'no_user',
+                'status': 'error',
                 'message': f'There is no user with the email address {email_address}.  Please make sure you are entering the correct email address with the correct spelling.'}
             return jsonify(response)
 
         if user == False:
             response = {
-                'status': 'fail',
-                'message': 'Credentials entered were incorrect.  Please try again.'}
+                'status': 'warning',
+                'title': 'Incorrect Credentials!',
+                'message': 'The email address and/or password were entered incorrectly.  Please try again.'}
             return jsonify(response)
 
         if user:
@@ -267,20 +270,20 @@ def login_user_via_API():
 
             response = {
                 'status': 'success',
+                'title': 'Successfully Logged In!',
+                'message': f"Welcome back, {user.name}.",
                 'access_token': access_token,
                 'refresh_token': refresh_token,
                 'access_token_exp': datetime.timestamp(now+timedelta(hours=1)),
-                'refresh_token_exp': datetime.timestamp(now+timedelta(days=30)),
-                'message': f"Credentials for {email_address} were authenticated."
-                # 'last_login': user.last_login
+                'refresh_token_exp': datetime.timestamp(now+timedelta(days=30))
             }
             return jsonify(response)
 
     else:
 
         response = {
-            'status': 'error',
-            'message': 'Inputs did not validate!',
+            'status': 'validation_errors',
+            # 'message': 'Inputs did not validate!',
             'errors': form.errors
         }
         return jsonify(response)
@@ -298,6 +301,7 @@ def logout_user_via_API():
     if user == None:
         response = {
             'status': 'error',
+            'title': 'Error!',
             'message': 'There is no user associated with the provided web token.'}
         return jsonify(response)
 
@@ -309,6 +313,7 @@ def logout_user_via_API():
 
         response = {
             'status': 'success',
+            'title': 'Successfully Logged Out!',
             'message': f"{user.email_address} has been logged out successfully.",
             'last_login': user.last_login}
         return jsonify(response)
@@ -322,19 +327,21 @@ def logout_user_via_API():
 def register_user_via_API():
 
     form = AddUserForm()
+    # form.source_code.choice = Language.get_all_option_choices(),
     if form.validate():
 
         name = request.json['name']
         email_address = request.json['email_address']
         password = request.json['password']
         password_check = request.json['password_check']
-        source_code = request.json['source_code']
+        source_code = (request.json['source_code'] or 'sv')
 
         if password != password_check:
 
             response = {
-                'status': 'fail',
-                'message': 'Passwords do not match.'}
+                'status': 'warning',
+                'title': 'Password Error!',
+                'message': 'The entered passwords do not match.'}
             return jsonify(response)
 
         new_user = User.register(name, email_address, password, source_code)
@@ -375,7 +382,8 @@ def confirm_email_address_via_API():
 
     if user == None:
         response = {
-            'status': 'fail',
+            'status': 'error',
+            'title': 'Error!',
             'message': 'There is no user with a matching email confirmation token.'}
         return jsonify(response)
 
@@ -389,13 +397,15 @@ def confirm_email_address_via_API():
 
             response = {
                 'status': 'success',
+                'title': 'Confirmed!',
                 'message': f"Thank you for confirming your email address, {authenticated_user.name}!  You can now use this email address to reset your password."}
             return jsonify(response)
 
         else:
             response = {
-                'status': 'fail',
-                'message': f"The password entered is incorrect for the account associatied the email confirmation token {token}."}
+                'status': 'warning',
+                'title': 'Incorrect Password!',
+                'message': f"The password entered is incorrect for the account associatied the email confirmation token {token}.  Please try again."}
             return jsonify(response)
 
 # -------------------------------------------------------------------
@@ -423,6 +433,7 @@ def password_reset_via_API():
     if user == None:
         response = {
             'status': 'error',
+            'title': 'Token Error!',
             'message': 'There is no user with a matching password reset token.'}
         return jsonify(response)
 
@@ -430,8 +441,9 @@ def password_reset_via_API():
 
         if password != password_check:
             response = {
-                'status': 'fail',
-                'message': 'The passwords do not match.'}
+                'status': 'warning',
+                'title': 'Password Error!',
+                'message': 'The entered passwords do not match.'}
             return jsonify(response)
 
         else:
@@ -441,6 +453,7 @@ def password_reset_via_API():
 
             response = {
                 'status': 'success',
+                'title': 'Success!',
                 'message': "Your password has been updated successfully!"}
             return jsonify(response)
 
@@ -553,7 +566,7 @@ def update_users_last_language(source_code):
     user = User.get_by_id(current_user)
 
     accessed_languages = json.loads(user.accessed_languages)
-    print(accessed_languages)
+    # print(accessed_languages)
 
     # accessed_languages = []
     # user.accessed_languages = json.dumps(accessed_languages)

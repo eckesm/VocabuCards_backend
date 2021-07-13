@@ -1,3 +1,4 @@
+from os import access
 from flask_bcrypt import Bcrypt
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import func
@@ -6,6 +7,7 @@ import string
 import random
 # import jwt
 import datetime
+import json
 
 
 db = SQLAlchemy()
@@ -45,6 +47,10 @@ class Language(db.Model):
     @classmethod
     def get_all_options(cls):
         return [(language.id, language.english) for language in Language.query.all()]
+
+    @classmethod
+    def get_all_option_choices(cls):
+        return [(language.id) for language in Language.query.all()]
 
 
 class User(db.Model):
@@ -127,8 +133,11 @@ class User(db.Model):
         hashed = bcrypt.generate_password_hash(password, rounds=14)
         hashed_utf = hashed.decode("utf8")
 
+        accessed_languages = []
+        accessed_languages.append(source_code)
+
         new_user = cls(id=generate_random_string(10, cls.get_by_id), name=name, email_address=email_address.lower(
-        ), password=hashed_utf, last_language=source_code, api_token=cls.generate_api_token(), email_confirm_token=cls.generate_api_token())
+        ), password=hashed_utf, last_language=source_code, api_token=cls.generate_api_token(), email_confirm_token=cls.generate_api_token(), accessed_languages=json.dumps(accessed_languages))
         db.session.add(new_user)
         db.session.commit()
         return new_user

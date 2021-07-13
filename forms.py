@@ -38,12 +38,12 @@ class LoginForm(FlaskForm):
         csrf = False
 
     email_address = StringField("Email address", validators=[
-        InputRequired(message="Input required."),
+        InputRequired(message="Email address required."),
         Email(
             message="Email address format required. Example: username@domain.com")])
 
     password = PasswordField("Password", validators=[
-                             InputRequired(message="Input required.")])
+                             InputRequired(message="Password required.")])
 
 
 class AddUserForm(FlaskForm):
@@ -53,32 +53,32 @@ class AddUserForm(FlaskForm):
         csrf = False
 
     name = StringField("Name", validators=[
-        InputRequired(message="Input required."),
+        InputRequired(message="Name required."),
         Length(
             min=3, max=25, message="Must be between 3 and 25 characters."),
         PermittedChars(permitted_characters=PERMITTED_NAME_CHARS, message="Name can only contain letters and -_'.")])
 
     email_address = StringField("Email address", validators=[
-                                InputRequired(message="Input required."),
+                                InputRequired(
+                                    message="Email address required."),
                                 Email(
                                     message="Email address format required. Example: username@domain.com"),
                                 AvailableEmail])
 
     password = PasswordField("Password", validators=[
-                             InputRequired(message="Input required."),
+                             InputRequired(message="Password required."),
                              Length(
-                                 min=8, max=40, message="Must be between 8 and 40 characters."),
+                                 min=8, max=40, message="Password must be between 8 and 40 characters."),
                              PermittedChars(permitted_characters=PERMITTED_PASSWORD_CHARS, message="Password can only contain letters, numbers, and !@#$%^&*()-_+=;:?")])
 
     password_check = PasswordField("Password", validators=[
-        InputRequired(message="Input required."),
+        InputRequired(message="Re-enter Password required."),
         Length(
-            min=8, max=40, message="Must be between 8 and 40 characters."),
+            min=8, max=40, message="Re-enter Password must be between 8 and 40 characters."),
         PermittedChars(permitted_characters=PERMITTED_PASSWORD_CHARS, message="Password can only contain letters, numbers, and !@#$%^&*()-_+=;:?")])
 
     # source_code = SelectField("Starting language",
-    #                           choices=Language.get_all_options(),
-    #                           validators=[Optional()])
+    #                           validators=[InputRequired(message="Starting Foreign Language required.")])
 
 
 class VocabWordForm(FlaskForm):
@@ -88,8 +88,9 @@ class VocabWordForm(FlaskForm):
         csrf = False
 
     source_code = SelectField(
-        "Language *", validators=[InputRequired()])
-    word = StringField("Word *", validators=[InputRequired()])
+        "Language *", validators=[InputRequired(message="Language is required.")])
+    word = StringField(
+        "Word *", validators=[InputRequired(message="Word is required.")])
     translation = StringField("Translation",
                               validators=[Optional()])
     notes = TextAreaField("Notes", validators=[Optional()])
@@ -103,7 +104,7 @@ class VocabComponentForm(FlaskForm):
 
     part_of_speech = SelectField("Part of speech",
                                  choices=POS_CHOICES,
-                                 validators=[InputRequired()])
+                                 validators=[InputRequired(message="Part of Speech is required.")])
     word = StringField(
         "Word *", validators=[InputRequired(message="Word is required.")])
     translation = StringField("Translation",
