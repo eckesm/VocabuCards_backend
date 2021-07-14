@@ -19,7 +19,8 @@ RSS_NEWS_SOURCES = {
     },
     'sv': {
         'url': 'https://api.sr.se/api/rss/program/4916',
-        'source': 'Radio Sweden på lätt svenska'
+        # 'source': 'Radio Sweden på lätt svenska'
+        'source': 'Radio Sweden'
     }
 }
 
@@ -39,8 +40,8 @@ def getArticleFromRSS(source_code):
     entryNum = random.randint(0, entriesCount)
     entry = NewsFeed.entries[entryNum]
 
-    print(entriesCount)
-    print(entryNum)
+    # print(entriesCount)
+    # print(entryNum)
 
     # return (entry)
 

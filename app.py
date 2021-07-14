@@ -130,8 +130,8 @@ def send_confirm_email_link(email_address):
         msg = Message('Please confirm your email address.',
                       sender='eckesm@gmail.com',
                       recipients=[email_address])
-        msg.body = f"Go to this link to confirm your email address: {react_app_url}/#/confirm-email/{token}"
-        msg.html = f"<b>Almost done!</b>  Click <a href='{react_app_url}/#/confirm-email/{token}'>THIS LINK</a> to confirm your email address."
+        msg.body = f"{user.name}, you are almost finsished setting up your VocabuCards account!  Please go to this link to confirm your email address: {react_app_url}/#/confirm-email/{token}"
+        msg.html = f"{user.name}, you are <i>ALMOST</i> finished setting up your VocabuCards account!  Click <a href='{react_app_url}/#/confirm-email/{token}'>THIS LINK</a> to confirm your email address."
         mail.send(msg)
         # flash('Please check your email for a link to confirm your email address.', 'info')
 
@@ -167,11 +167,11 @@ def send_password_reset_link(email_address):
         else:
             token = user.password_reset_token
 
-        msg = Message('Please reset your password.',
+        msg = Message('Reset your password.',
                       sender='eckesm@gmail.com',
                       recipients=[email_address])
-        msg.body = f"Go to this link to confirm your email address: {react_app_url}/#/new-password/{token}"
-        msg.html = f"<b>Almost done!</b>  Click <a href='{react_app_url}/#/new-password/{token}'>THIS LINK</a> to reset your password."
+        msg.body = f"Go to this link to reset your password: {react_app_url}/#/new-password/{token}"
+        msg.html = f"Click <a href='{react_app_url}/#/new-password/{token}'>THIS LINK</a> to reset your password."
         mail.send(msg)
 
         return {
@@ -405,7 +405,7 @@ def confirm_email_address_via_API():
             response = {
                 'status': 'warning',
                 'title': 'Incorrect Password!',
-                'message': f"The password entered is incorrect for the account associatied the email confirmation token {token}.  Please try again."}
+                'message': f"The password entered is incorrect for the account associatied with the provided email confirmation token ({token}).  Please try again."}
             return jsonify(response)
 
 # -------------------------------------------------------------------
