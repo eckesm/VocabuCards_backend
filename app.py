@@ -226,6 +226,21 @@ def getArticleUnprotected(source_code):
     article = getArticleFromRSS(source_code)
     return(jsonify(article))
 
+# -------------------------------------------------------------------
+
+
+@app.route('/test', methods=['GET'])
+@cross_origin()
+@jwt_required()
+def test_access_token():
+
+    response = {
+        'status': 'success'
+    }
+    return jsonify(response)
+
+# -------------------------------------------------------------------
+
 
 @app.route('/get-news-article/<source_code>', methods=['GET'])
 @cross_origin()
@@ -233,6 +248,8 @@ def getArticleUnprotected(source_code):
 def getArticle(source_code):
     article = getArticleFromRSS(source_code)
     return(jsonify(article))
+
+# -------------------------------------------------------------------
 
 
 @app.route('/login', methods=['POST'])
@@ -645,7 +662,7 @@ def add_new_word_by_api():
         new_word = VocabWord.add_vocab_word(
             user_id, source_code, word, translation, notes)
 
-        print(f"ROOT_ID: {new_word.id}", file=sys.stderr)
+        # print(f"ROOT_ID: {new_word.id}", file=sys.stderr)
 
         response = {
             'word': new_word.serialize(),
