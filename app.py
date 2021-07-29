@@ -493,9 +493,12 @@ def send_password_reset_via_API():
 @jwt_required()
 def translate(word, source_code, translate_code):
 
+    if len(word) > 150:
+
+        return(jsonify('ERROR: text cannot exceed 150 characters.'))
+
     word = TranslationWord(word, source_code, translate_code)
     translation = word.translated_word
-
     return jsonify(translation)
 
 
@@ -776,10 +779,11 @@ def add_new_variation_by_api():
         definition = request.json['definition']
         synonyms = request.json['synonyms']
         examples = request.json['examples']
+        examples_translation = request.json['examples_translation']
         notes = request.json['notes']
 
         new_component = VocabWordComponent.add_variation(
-            root_id, user_id, part_of_speech, word, translation, description, definition, synonyms, examples, notes)
+            root_id, user_id, part_of_speech, word, translation, description, definition, synonyms, examples, examples_translation, notes)
 
         response = {
             'component': new_component.serialize(),
@@ -815,6 +819,7 @@ def edit_variation_by_api(id):
         definition = request.json['definition']
         synonyms = request.json['synonyms']
         examples = request.json['examples']
+        examples_translation = request.json['examples_translation']
         notes = request.json['notes']
 
         edit_component = VocabWordComponent.get_by_id(id)
@@ -827,7 +832,7 @@ def edit_variation_by_api(id):
             return jsonify(response)
 
         edit_component.update(
-            part_of_speech, word, translation, description, definition, synonyms, examples, notes)
+            part_of_speech, word, translation, description, definition, synonyms, examples, examples_translation, notes)
 
         response = {
             'component': edit_component.serialize(),

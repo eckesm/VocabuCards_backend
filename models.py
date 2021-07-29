@@ -318,6 +318,7 @@ class VocabWordComponent(db.Model):
     definition = db.Column(db.Text, nullable=True)
     synonyms = db.Column(db.Text, nullable=True)
     examples = db.Column(db.Text, nullable=True)
+    examples_translation = db.Column(db.Text, nullable=True)
     notes = db.Column(db.Text, nullable=True)
 
     def serialize(self):
@@ -332,10 +333,11 @@ class VocabWordComponent(db.Model):
             'definition': self.definition,
             'synonyms': self.synonyms,
             'examples': self.examples,
+            'examples_translation': self.examples_translation,
             'notes': self.notes
         }
 
-    def update(self, part_of_speech, variation, translation, description, definition, synonyms, examples, notes):
+    def update(self, part_of_speech, variation, translation, description, definition, synonyms, examples, examples_translation, notes):
         self.part_of_speech = part_of_speech
         self.variation = variation
         self.translation = translation
@@ -343,6 +345,7 @@ class VocabWordComponent(db.Model):
         self.definition = definition
         self.synonyms = synonyms
         self.examples = examples
+        self.examples_translation = examples_translation
         self.notes = notes
         db.session.add(self)
         db.session.commit()
@@ -353,9 +356,9 @@ class VocabWordComponent(db.Model):
         return cls.query.filter_by(id=id).one_or_none()
 
     @classmethod
-    def add_variation(cls, root_id, owner_id, part_of_speech, variation, translation, description, definition, synonyms, examples, notes):
+    def add_variation(cls, root_id, owner_id, part_of_speech, variation, translation, description, definition, synonyms, examples, examples_translation, notes):
         new_variation = cls(id=generate_random_string(20, cls.get_by_id), root_id=root_id, owner_id=owner_id,
-                            part_of_speech=part_of_speech, variation=variation, translation=translation, description=description, definition=definition, synonyms=synonyms, examples=examples, notes=notes)
+                            part_of_speech=part_of_speech, variation=variation, translation=translation, description=description, definition=definition, synonyms=synonyms, examples=examples, examples_translation=examples_translation, notes=notes)
         db.session.add(new_variation)
         db.session.commit()
         return new_variation
