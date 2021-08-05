@@ -13,7 +13,7 @@ RSS_NEWS_SOURCES = {
         'url': 'https://www.lemonde.fr/rss/en_continu.xml',
         'source': 'Le Monde'
     },
-    'ge': {
+    'de': {
         'url': 'http://rss.focus.de/fol/XML/rss_folnews.xml',
         'source': 'Focus    '
     },
@@ -67,7 +67,7 @@ def getArticleFromRSS(source_code):
         }
         return(article)
 
-    if source_code == 'ge':
+    if source_code == 'de':
         article = {
             'author': RSS_NEWS_SOURCES[source_code]['source'],
             'link': entry['link'],

@@ -4,3 +4,4 @@
 .env
 secret.py
 .env
+stripe.py

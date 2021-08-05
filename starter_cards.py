@@ -18,7 +18,8 @@ STARTER_WORDS = {
                     'description': 'singular, indefinite',
                     'definition': 'a domestic mammal that is related to the wolves and foxes.',
                     'synonyms': 'canine, hound, pooch',
-                    'examples': 'Vous ne pouvez pas apprendre de nouveaux tours à un vieux chien.'
+                    'examples': 'Vous ne pouvez pas apprendre de nouveaux tours à un vieux chien.',
+                    'examples_translation': "You can't teach an old dog new tricks."
                 },
                 {
                     'part_of_speech': 'noun',
@@ -27,7 +28,8 @@ STARTER_WORDS = {
                     'description': 'singular, definite',
                     'definition': '',
                     'synonyms': '',
-                    'examples': ''
+                    'examples': '',
+                    'examples_translation': ""
                 },
                 {
                     'part_of_speech': 'noun',
@@ -36,7 +38,8 @@ STARTER_WORDS = {
                     'description': 'plural, indefinite',
                     'definition': '',
                     'synonyms': '',
-                    'examples': ''
+                    'examples': '',
+                    'examples_translation': ""
                 },
                 {
                     'part_of_speech': 'noun',
@@ -45,7 +48,8 @@ STARTER_WORDS = {
                     'description': 'plural, definite',
                     'definition': '',
                     'synonyms': '',
-                    'examples': ''
+                    'examples': '',
+                    'examples_translation': ""
                 }
             ]
         }
@@ -63,7 +67,8 @@ STARTER_WORDS = {
                     'description': 'singular, indefinite',
                     'definition': 'a domestic mammal that is related to the wolves and foxes.',
                     'synonyms': 'canine, hound, pooch',
-                    'examples': 'Du kan inte lära en gammal hund nya knep.'
+                    'examples': 'Du kan inte lära en gammal hund nya knep.',
+                    'examples_translation': "You can't teach an old dog new tricks."
                 },
                 {
                     'part_of_speech': 'noun',
@@ -72,7 +77,8 @@ STARTER_WORDS = {
                     'description': 'singular, definite',
                     'definition': '',
                     'synonyms': '',
-                    'examples': ''
+                    'examples': '',
+                    'examples_translation': ""
                 },
                 {
                     'part_of_speech': 'noun',
@@ -81,7 +87,8 @@ STARTER_WORDS = {
                     'description': 'plural, indefinite',
                     'definition': '',
                     'synonyms': '',
-                    'examples': ''
+                    'examples': '',
+                    'examples_translation': ""
                 },
                 {
                     'part_of_speech': 'noun',
@@ -90,7 +97,8 @@ STARTER_WORDS = {
                     'description': 'plural, definite',
                     'definition': '',
                     'synonyms': '',
-                    'examples': ''
+                    'examples': '',
+                    'examples_translation': ""
                 }
             ]
         },
@@ -106,7 +114,8 @@ STARTER_WORDS = {
                     'description': 'singular, indefinite',
                     'definition': 'a domestic mammal that is related to the wolves and foxes.',
                     'synonyms': 'try, attempt, experiment',
-                    'examples': 'Ge det ett försök.'
+                    'examples': 'Ge det ett försök.',
+                    'examples_translation': "Give it a try."
                 },
                 {
                     'part_of_speech': 'noun',
@@ -115,7 +124,8 @@ STARTER_WORDS = {
                     'description': 'singular, definite',
                     'definition': '',
                     'synonyms': '',
-                    'examples': ''
+                    'examples': '',
+                    'examples_translation': ""
                 },
                 {
                     'part_of_speech': 'noun',
@@ -124,7 +134,8 @@ STARTER_WORDS = {
                     'description': 'plural, indefinite',
                     'definition': '',
                     'synonyms': '',
-                    'examples': ''
+                    'examples': '',
+                    'examples_translation': ""
                 },
                 {
                     'part_of_speech': 'noun',
@@ -133,7 +144,8 @@ STARTER_WORDS = {
                     'description': 'plural, definite',
                     'definition': '',
                     'synonyms': '',
-                    'examples': ''
+                    'examples': '',
+                    'examples_translation': ""
                 },
                 {
                     'part_of_speech': 'verb',
@@ -142,7 +154,8 @@ STARTER_WORDS = {
                     'description': 'present tense',
                     'definition': '',
                     'synonyms': '',
-                    'examples': 'Jag försöker bli bättre.'
+                    'examples': 'Jag försöker bli bättre.',
+                    'examples_translation': "I am trying to be better."
                 },
                 {
                     'part_of_speech': 'verb',
@@ -151,7 +164,8 @@ STARTER_WORDS = {
                     'description': 'past imperfect',
                     'definition': '',
                     'synonyms': '',
-                    'examples': 'Jag försökte.'
+                    'examples': 'Jag försökte.',
+                    'examples_translation': "I tried."
                 },
                 {
                     'part_of_speech': 'verb',
@@ -160,7 +174,8 @@ STARTER_WORDS = {
                     'description': 'supine / past perfect',
                     'definition': '',
                     'synonyms': '',
-                    'examples': 'Jag har försökt.'
+                    'examples': 'Jag har försökt.',
+                    'examples_translation': "I have tried."
                 }
             ]
         }
@@ -174,9 +189,9 @@ def create_starter_word(owner_id, source_code, root, translation, notes):
     return new_vocab_word
 
 
-def create_starter_component(root_id, owner_id, part_of_speech, variation, translation, description, definition, synonyms, examples):
+def create_starter_component(root_id, owner_id, part_of_speech, variation, translation, description, definition, synonyms, examples, examples_translation):
     new_variation = VocabWordComponent.add_variation(
-        root_id, owner_id, part_of_speech, variation, translation, description, definition, synonyms, examples, '')
+        root_id, owner_id, part_of_speech, variation, translation, description, definition, synonyms, examples, examples_translation, '')
     return new_variation
 
 
@@ -188,7 +203,7 @@ def create_all_language_starters(owner_id, source_code):
                 owner_id, source_code, word['root'], word['translation'], word['notes'])
             for variation in word['variations']:
                 create_starter_component(new_word.id, owner_id, variation['part_of_speech'], variation['variation'], variation['translation'],
-                                         variation['description'], variation['definition'], variation['synonyms'], variation['examples'])
+                                         variation['description'], variation['definition'], variation['synonyms'], variation['examples'], variation['examples_translation'])
         return {
             'status': 'success',
             'message': 'Successfully created starter vocabulary words.'

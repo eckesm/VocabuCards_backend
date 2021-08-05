@@ -1,12 +1,15 @@
 
+from datetime import datetime
 from flask import Flask, render_template, redirect, session, flash, g, request, jsonify, url_for, make_response
 # from functools import wraps
 from flask_debugtoolbar import DebugToolbarExtension
 from flask_mail import Mail, Message
+from stripe.api_resources import price
 from models import db, connect_db, Language, User, VocabWord, VocabWordComponent
 from starter_cards import create_all_language_starters
 from forms import LoginForm, AddUserForm, VocabWordForm, VocabComponentForm, VocabWordAndComponentForm
 from word import TranslationWord, DictionaryWord
+import stripe_payments
 from articles import getArticleFromRSS, RSS_NEWS_SOURCES
 # import requests
 import sys
@@ -15,7 +18,7 @@ import os
 from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt, get_jwt_identity, jwt_required, JWTManager, set_access_cookies, unset_jwt_cookies
 from flask_cors import CORS, cross_origin
 from secrets import token_urlsafe
-from datetime import datetime, timedelta, timezone
+import time
 
 
 app = Flask(__name__)
@@ -30,12 +33,24 @@ app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
 # app.config["JWT_COOKIE_SECURE"] = False
 # app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
 app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY')
-app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)
-app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=30)
+# app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)
+# app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=30)
 
 app.config['GOOGLE_LANGUAGE_KEY'] = os.environ.get(
     'GOOGLE_LANGUAGE_KEY')
 app.config['WORDS_API_KEY'] = os.environ.get('WORDS_API_KEY')
+app.config['STRIPE_SECRET'] = os.environ.get('STRIPE_SECRET')
+
+app.config['STRIPE_ENDPOINT_SIGNING_SECRET'] = os.environ.get(
+    'STRIPE_ENDPOINT_SIGNING_SECRET')
+app.config['STRIPE_DEFAULT_PRICE_ID'] = os.environ.get(
+    'STRIPE_DEFAULT_PRICE_ID')
+app.config['STRIPE_WEEKLY_PLAN_PRICE_ID'] = os.environ.get(
+    'STRIPE_WEEKLY_PLAN_PRICE_ID')
+app.config['STRIPE_MONTHLY_PLAN_PRICE_ID'] = os.environ.get(
+    'STRIPE_MONTHLY_PLAN_PRICE_ID')
+app.config['STRIPE_ANNUALLY_PLAN_PRICE_ID'] = os.environ.get(
+    'STRIPE_ANNUALLY_PLAN_PRICE_ID')
 
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
 app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
@@ -47,6 +62,8 @@ app.config['REACT_PRODUCTION_DOMAIN'] = os.environ.get(
     'REACT_PRODUCTION_DOMAIN')
 
 react_app_url = app.config["REACT_PRODUCTION_DOMAIN"]
+# STRIPE_ENDPOINT_SIGNING_SECRET = app.config["STRIPE_ENDPOINT_SIGNING_SECRET"]
+
 
 cors = CORS(app)
 mail = Mail(app)
@@ -208,11 +225,11 @@ def refresh_access_token():
     user = User.get_by_id(refresh_user)
     access_token = create_access_token(identity=user)
 
-    now = datetime.now(timezone.utc)
+    # now = datetime.now(timezone.utc)
     response = {
         'status': 'success',
         'access_token': access_token,
-        'access_token_exp': datetime.timestamp(now+timedelta(hours=1)),
+        # 'access_token_exp': datetime.timestamp(now+timedelta(hours=1)),
         'message': "New access token created successfully."
     }
     return jsonify(response)
@@ -242,10 +259,97 @@ def test_access_token():
 # -------------------------------------------------------------------
 
 
+@app.route('/test-stripe', methods=['GET'])
+@cross_origin()
+def test_stripe():
+    test = stripe_payments.test_Stripe_PaymentIntent()
+    return jsonify(test)
+
+# -------------------------------------------------------------------
+
+
+@app.route('/create-checkout-session', methods=['POST'])
+@cross_origin()
+@jwt_required()
+def create_checkout_session_route():
+
+    current_user = get_jwt_identity()
+    user = User.get_by_id(current_user)
+    price_id = request.json['price_id']
+    stripe_customer_id = request.json['stripe_customer_id']
+
+    print(stripe_customer_id)
+
+    if stripe_customer_id is None:
+        new_customer = stripe_payments.create_customer_by_api(
+            user.id, user.email_address, user.name)
+        customer_id = new_customer.id
+    else:
+        customer_id = stripe_customer_id
+
+    user.set_stripe_customer_id(customer_id)
+
+    session = stripe_payments.create_checkout_session(
+        price_id, user.id, customer_id, react_app_url)
+
+    # print(session)
+
+    return jsonify({'url': session.url})
+
+# -------------------------------------------------------------------
+
+
+@app.route('/stripe-webhook', methods=['POST'])
+@cross_origin()
+# @jwt_required()
+def stripe_webhook_received():
+    payload = request.data
+    sig_header = request.headers['Stripe-Signature']
+
+    event = stripe_payments.create_event(payload, sig_header)
+    return event
+    # print(data)
+
+# -------------------------------------------------------------------
+
+
+@app.route('/create-billing-portal-session', methods=['POST'])
+@cross_origin()
+@jwt_required()
+def create_billing_portal_session_route():
+
+    # current_user = get_jwt_identity()
+    # user = User.get_by_id(current_user)
+    stripe_customer_id = request.json['stripe_customer_id']
+
+    session = stripe_payments.create_billing_portal_session(
+        stripe_customer_id, react_app_url)
+
+    return jsonify({'url': session.url})
+# -------------------------------------------------------------------
+
+
+@app.route('/stripe-customer-id', methods=['GET'])
+@cross_origin()
+@jwt_required()
+def get_stripe_customer_id():
+
+    current_user = get_jwt_identity()
+    user = User.get_by_id(current_user)
+
+    response = {
+        'stripe_customer_id': user.stripe_customer_id
+    }
+
+    return jsonify(response)
+
+
+# -------------------------------------------------------------------
+
 @app.route('/get-news-article/<source_code>', methods=['GET'])
 @cross_origin()
 @jwt_required()
-def getArticle(source_code):
+def get_news_article(source_code):
     article = getArticleFromRSS(source_code)
     return(jsonify(article))
 
@@ -283,7 +387,36 @@ def login_user_via_API():
             if user.first_login == True:
                 user.update_first_login()
 
-            now = datetime.now(timezone.utc)
+            # UPGRADING EARLIER ACCOUNT SETTINGS
+
+            if user.stripe_customer_id is None:
+                # Create Stripe customer ID
+                new_customer = stripe_payments.create_customer_by_api(
+                    user.id, user.email_address, user.name)
+                user.set_stripe_customer_id(new_customer.id)
+
+            current_time = datetime.now()
+            unix_timestamp = current_time.timestamp()
+            unix_timestamp_plus_7_days = unix_timestamp + (7 * 24 * 60 * 60)
+
+            if user.trial_end is None:
+                user.set_trial_end(unix_timestamp_plus_7_days)
+
+            if user.stripe_subscription_id is None:
+                # Create Stripe trial subscription
+                new_subscription = stripe_payments.create_trial_subscription_by_api(
+                    user.stripe_customer_id, 7)
+                user.set_stripe_subscription(
+                    new_subscription.id, "trial", "expiring", unix_timestamp_plus_7_days)
+
+            if user.current_plan is None:
+                # Set current_plan to trial
+                user.set_stripe_subscription(
+                    user.stripe_subscription_id, "trial", "expiring", unix_timestamp_plus_7_days)
+                user.set_trial_end(unix_timestamp_plus_7_days)
+
+            if user.subscription_status == "renewing" and user.stripe_payment_method is None:
+                user.set_stripe_payment_method('payment_attached')
 
             response = {
                 'status': 'success',
@@ -291,8 +424,8 @@ def login_user_via_API():
                 'message': f"Welcome back, {user.name}.",
                 'access_token': access_token,
                 'refresh_token': refresh_token,
-                'access_token_exp': datetime.timestamp(now+timedelta(hours=1)),
-                'refresh_token_exp': datetime.timestamp(now+timedelta(days=30))
+                # 'access_token_exp': datetime.timestamp(now+timedelta(hours=1)),
+                # 'refresh_token_exp': datetime.timestamp(now+timedelta(days=30))
             }
             return jsonify(response)
 
@@ -361,15 +494,44 @@ def register_user_via_API():
                 'message': 'The entered passwords do not match.'}
             return jsonify(response)
 
-        new_user = User.register(name, email_address, password, source_code)
+        current_time = datetime.now()
+        unix_timestamp = current_time.timestamp()
+        unix_timestamp_plus_7_days = unix_timestamp + (7 * 24 * 60 * 60)
+
+        new_user = User.register(
+            name, email_address, password, unix_timestamp_plus_7_days, source_code)
 
         if new_user:
+            # Create Stripe customer ID
+            new_customer = stripe_payments.create_customer_by_api(
+                new_user.id, email_address, name)
+            new_user.set_stripe_customer_id(new_customer.id)
+
+            # Create Stripe trial subscription
+            # UNIX_Now = int(time.time())
+            # UNIX_Now=datetime.fromtimestamp()
+            # print('UNIX_Now', UNIX_Now)
+
+            new_subscription = stripe_payments.create_trial_subscription_by_api(
+                new_customer.id, 7)
+            new_user.set_stripe_subscription(
+                new_subscription.id, "trial", "expiring", unix_timestamp_plus_7_days)
+
+            # Send email address confirmation link
             confirmation_email = send_confirm_email_link(email_address)
+
+            # Create first language starter words
             starter_words = create_all_language_starters(
                 new_user.id, source_code)
+
+            # create access token
             access_token = create_access_token(identity=new_user)
+            refresh_token = create_refresh_token(identity=new_user)
+
+            # return data
             response = {
                 'access_token': access_token,
+                'refresh_token': refresh_token,
                 'confirmation_email': confirmation_email,
                 'message': f"Welcome, {name}!  Credentials for {email_address} were created successfully.",
                 'starter_words': starter_words,
@@ -543,18 +705,56 @@ def get_user_start_information():
     words = db.session.query(VocabWord).filter(
         VocabWord.owner_id == user.id, VocabWord.source_code == last_language).order_by(VocabWord.root).all()
 
-    response = {
-        'current_text': user.current_text,
-        'first_login': user.first_login,
-        'is_email_confirmed': user.is_email_confirmed,
-        'languages': languages,
-        'last_login': user.last_login,
-        'last_source_code': last_language,
-        'name': user.name,
-        'news_sources': RSS_NEWS_SOURCES,
-        'user': user.email_address,
-        'words_array': [word.serialize_and_components() for word in words]
-    }
+    current_time = datetime.now()
+    unix_timestamp = current_time.timestamp()
+
+    print(float(unix_timestamp))
+    print(float(user.stripe_period_end))
+
+    if float(unix_timestamp) > float(user.stripe_period_end):
+        print('EXPIRED')
+        user.set_subscription_status('expired')
+        response = {
+            'current_plan': user.current_plan,
+            # 'current_text': user.current_text,
+            'first_login': user.first_login,
+            'is_email_confirmed': user.is_email_confirmed,
+            'languages': languages,
+            'last_login': user.last_login,
+            'last_source_code': last_language,
+            'name': user.name,
+            # 'news_sources': RSS_NEWS_SOURCES,
+            'stripe_customer_id': user.stripe_customer_id,
+            'stripe_payment_method': user.stripe_payment_method,
+            'stripe_period_start': user.stripe_period_start,
+            'stripe_period_end': user.stripe_period_end,
+            'subscription_status': user.subscription_status,
+            'trial_end': user.trial_end,
+            'user': user.email_address,
+            # 'words_array': [word.serialize_and_components() for word in words]
+        }
+
+    else:
+
+        response = {
+            'current_plan': user.current_plan,
+            'current_text': user.current_text,
+            'first_login': user.first_login,
+            'is_email_confirmed': user.is_email_confirmed,
+            'languages': languages,
+            'last_login': user.last_login,
+            'last_source_code': last_language,
+            'name': user.name,
+            'news_sources': RSS_NEWS_SOURCES,
+            'stripe_customer_id': user.stripe_customer_id,
+            'stripe_payment_method': user.stripe_payment_method,
+            'stripe_period_start': user.stripe_period_start,
+            'stripe_period_end': user.stripe_period_end,
+            'subscription_status': user.subscription_status,
+            'trial_end': user.trial_end,
+            'user': user.email_address,
+            'words_array': [word.serialize_and_components() for word in words]
+        }
 
     return jsonify(response)
 

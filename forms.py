@@ -5,7 +5,7 @@ import email_validator
 from models import User, Language
 
 PERMITTED_NAME_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqurstuvwxyz-_'. "
-PERMITTED_PASSWORD_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqurstuvwxyz1234567890!@#$%^&*()-_+=;:?"
+PERMITTED_PASSWORD_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqurstuvwxyz1234567890!@#$%^<>&*(){}|-_+=;:?~`.,"
 
 POS_CHOICES = [('adjective', 'adjective'), ('adverb', 'adverb'), ('article', 'article'), ('conjunction', 'conjunction'),
                ('expression', 'expression'), ('noun', 'noun'), ('preposition', 'preposition'), ('verb', 'verb'), ('other', 'other')]
@@ -69,13 +69,13 @@ class AddUserForm(FlaskForm):
                              InputRequired(message="Password required."),
                              Length(
                                  min=8, max=40, message="Password must be between 8 and 40 characters."),
-                             PermittedChars(permitted_characters=PERMITTED_PASSWORD_CHARS, message="Password can only contain letters, numbers, and !@#$%^&*()-_+=;:?")])
+                             PermittedChars(permitted_characters=PERMITTED_PASSWORD_CHARS, message="Password can only contain letters, numbers, and !@#$%^<>&*()\u007B\u007D|-_+=;:?~`.,")])
 
     password_check = PasswordField("Password", validators=[
         InputRequired(message="Re-enter Password required."),
         Length(
             min=8, max=40, message="Re-enter Password must be between 8 and 40 characters."),
-        PermittedChars(permitted_characters=PERMITTED_PASSWORD_CHARS, message="Password can only contain letters, numbers, and !@#$%^&*()-_+=;:?")])
+        PermittedChars(permitted_characters=PERMITTED_PASSWORD_CHARS, message="Password can only contain letters, numbers, and !@#$%^<>&*()\u007B\u007D|-_+=;:?~`.,")])
 
     # source_code = SelectField("Starting language",
     #                           validators=[InputRequired(message="Starting Foreign Language required.")])
