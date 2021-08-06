@@ -61,6 +61,7 @@ class User(db.Model):
     __tablename__ = 'users'
 
     id = db.Column(db.Text, primary_key=True)
+    account_override = db.Column(db.Text, nullable=True)
     email_address = db.Column(db.String(254), nullable=False, unique=True)
     email_confirm_token = db.Column(db.Text, nullable=True)
     is_email_confirmed = db.Column(db.Boolean, nullable=False, default=False)

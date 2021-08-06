@@ -5,6 +5,10 @@ import random
 from sqlalchemy.sql.expression import false
 
 RSS_NEWS_SOURCES = {
+    'de': {
+        'url': 'http://rss.focus.de/fol/XML/rss_folnews.xml',
+        'source': 'Focus'
+    },
     'es': {
         'url': 'https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/portada',
         'source': 'El País'
@@ -13,9 +17,9 @@ RSS_NEWS_SOURCES = {
         'url': 'https://www.lemonde.fr/rss/en_continu.xml',
         'source': 'Le Monde'
     },
-    'de': {
-        'url': 'http://rss.focus.de/fol/XML/rss_folnews.xml',
-        'source': 'Focus    '
+    'it': {
+        'url': 'https://www.ansa.it/sito/ansait_rss.xml',
+        'source': 'ANSA.it'
     },
     'sv': {
         'url': 'https://api.sr.se/api/rss/program/4916',
@@ -45,6 +49,17 @@ def getArticleFromRSS(source_code):
 
     # return (entry)
 
+    if source_code == 'de':
+        article = {
+            'author': RSS_NEWS_SOURCES[source_code]['source'],
+            'link': entry['link'],
+            'pubDate': entry['published'],
+            'text': cleanhtml(entry['content'][1]['value']),
+            'title': entry['title'],
+            'fullText': False
+        }
+        return(article)
+
     if source_code == 'es':
         article = {
             'author': entry['author'],
@@ -67,15 +82,17 @@ def getArticleFromRSS(source_code):
         }
         return(article)
 
-    if source_code == 'de':
+    if source_code == 'it':
+        print(entry)
         article = {
             'author': RSS_NEWS_SOURCES[source_code]['source'],
             'link': entry['link'],
             'pubDate': entry['published'],
-            'text': cleanhtml(entry['content'][1]['value']),
+            'text': entry['summary'],
             'title': entry['title'],
             'fullText': False
         }
+        print(article)
         return(article)
 
     if source_code == 'sv':

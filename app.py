@@ -96,7 +96,7 @@ connect_db(app)
 
 @jwt.expired_token_loader
 def my_expired_token_callback(jwt_header, jwt_payload):
-    print('-----> @jwt.expired_token_loader')
+    # print('-----> @jwt.expired_token_loader')
 
     response = {
         'status': "expired_token",
@@ -278,7 +278,7 @@ def create_checkout_session_route():
     price_id = request.json['price_id']
     stripe_customer_id = request.json['stripe_customer_id']
 
-    print(stripe_customer_id)
+    # print(stripe_customer_id)
 
     if stripe_customer_id is None:
         new_customer = stripe_payments.create_customer_by_api(
@@ -708,13 +708,14 @@ def get_user_start_information():
     current_time = datetime.now()
     unix_timestamp = current_time.timestamp()
 
-    print(float(unix_timestamp))
-    print(float(user.stripe_period_end))
+    # print(float(unix_timestamp))
+    # print(float(user.stripe_period_end))
 
-    if float(unix_timestamp) > float(user.stripe_period_end):
+    if (float(unix_timestamp) > float(user.stripe_period_end)) and user.account_override is None:
         print('EXPIRED')
         user.set_subscription_status('expired')
         response = {
+            'account_override': user.account_override,
             'current_plan': user.current_plan,
             # 'current_text': user.current_text,
             'first_login': user.first_login,
@@ -737,6 +738,7 @@ def get_user_start_information():
     else:
 
         response = {
+            'account_override': user.account_override,
             'current_plan': user.current_plan,
             'current_text': user.current_text,
             'first_login': user.first_login,
