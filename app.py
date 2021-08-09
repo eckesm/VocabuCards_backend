@@ -1,21 +1,19 @@
 
 from datetime import datetime
-from flask import Flask, render_template, redirect, session, flash, g, request, jsonify, url_for, make_response
-# from functools import wraps
+from flask import Flask, request, jsonify
 from flask_debugtoolbar import DebugToolbarExtension
 from flask_mail import Mail, Message
-from stripe.api_resources import price
+# from stripe.api_resources import price
 from models import db, connect_db, Language, User, VocabWord, VocabWordComponent
 from starter_cards import create_all_language_starters
 from forms import LoginForm, AddUserForm, VocabWordForm, VocabComponentForm, VocabWordAndComponentForm
 from word import TranslationWord, DictionaryWord
 import stripe_payments
 from articles import getArticleFromRSS, RSS_NEWS_SOURCES
-# import requests
-import sys
+# import sys
 import json
 import os
-from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt, get_jwt_identity, jwt_required, JWTManager, set_access_cookies, unset_jwt_cookies
+from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt_identity, jwt_required, JWTManager
 from flask_cors import CORS, cross_origin
 from secrets import token_urlsafe
 import time
@@ -30,11 +28,7 @@ app.config['SQLALCHEMY_ECHO'] = False
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
 
-# app.config["JWT_COOKIE_SECURE"] = False
-# app.config["JWT_TOKEN_LOCATION"] = ["cookies"]
 app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY')
-# app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)
-# app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=30)
 
 app.config['GOOGLE_LANGUAGE_KEY'] = os.environ.get(
     'GOOGLE_LANGUAGE_KEY')
@@ -62,8 +56,6 @@ app.config['REACT_PRODUCTION_DOMAIN'] = os.environ.get(
     'REACT_PRODUCTION_DOMAIN')
 
 react_app_url = app.config["REACT_PRODUCTION_DOMAIN"]
-# STRIPE_ENDPOINT_SIGNING_SECRET = app.config["STRIPE_ENDPOINT_SIGNING_SECRET"]
-
 
 cors = CORS(app)
 mail = Mail(app)
@@ -150,7 +142,6 @@ def send_confirm_email_link(email_address):
         msg.body = f"{user.name}, you are almost finsished setting up your VocabuCards account!  Please go to this link to confirm your email address: {react_app_url}/#/confirm-email/{token}"
         msg.html = f"{user.name}, you are <i>ALMOST</i> finished setting up your VocabuCards account!  Click <a href='{react_app_url}/#/confirm-email/{token}'>THIS LINK</a> to confirm your email address."
         mail.send(msg)
-        # flash('Please check your email for a link to confirm your email address.', 'info')
 
         return {
             'email_address': email_address,
@@ -225,11 +216,9 @@ def refresh_access_token():
     user = User.get_by_id(refresh_user)
     access_token = create_access_token(identity=user)
 
-    # now = datetime.now(timezone.utc)
     response = {
         'status': 'success',
         'access_token': access_token,
-        # 'access_token_exp': datetime.timestamp(now+timedelta(hours=1)),
         'message': "New access token created successfully."
     }
     return jsonify(response)
@@ -278,8 +267,6 @@ def create_checkout_session_route():
     price_id = request.json['price_id']
     stripe_customer_id = request.json['stripe_customer_id']
 
-    # print(stripe_customer_id)
-
     if stripe_customer_id is None:
         new_customer = stripe_payments.create_customer_by_api(
             user.id, user.email_address, user.name)
@@ -292,8 +279,6 @@ def create_checkout_session_route():
     session = stripe_payments.create_checkout_session(
         price_id, user.id, customer_id, react_app_url)
 
-    # print(session)
-
     return jsonify({'url': session.url})
 
 # -------------------------------------------------------------------
@@ -301,7 +286,6 @@ def create_checkout_session_route():
 
 @app.route('/stripe-webhook', methods=['POST'])
 @cross_origin()
-# @jwt_required()
 def stripe_webhook_received():
     payload = request.data
     sig_header = request.headers['Stripe-Signature']
@@ -318,8 +302,6 @@ def stripe_webhook_received():
 @jwt_required()
 def create_billing_portal_session_route():
 
-    # current_user = get_jwt_identity()
-    # user = User.get_by_id(current_user)
     stripe_customer_id = request.json['stripe_customer_id']
 
     session = stripe_payments.create_billing_portal_session(
@@ -424,8 +406,6 @@ def login_user_via_API():
                 'message': f"Welcome back, {user.name}.",
                 'access_token': access_token,
                 'refresh_token': refresh_token,
-                # 'access_token_exp': datetime.timestamp(now+timedelta(hours=1)),
-                # 'refresh_token_exp': datetime.timestamp(now+timedelta(days=30))
             }
             return jsonify(response)
 
@@ -433,7 +413,6 @@ def login_user_via_API():
 
         response = {
             'status': 'validation_errors',
-            # 'message': 'Inputs did not validate!',
             'errors': form.errors
         }
         return jsonify(response)
@@ -477,7 +456,6 @@ def logout_user_via_API():
 def register_user_via_API():
 
     form = AddUserForm()
-    # form.source_code.choice = Language.get_all_option_choices(),
     if form.validate():
 
         name = request.json['name']
@@ -511,7 +489,6 @@ def register_user_via_API():
             # UNIX_Now = int(time.time())
             # UNIX_Now=datetime.fromtimestamp()
             # print('UNIX_Now', UNIX_Now)
-
             new_subscription = stripe_payments.create_trial_subscription_by_api(
                 new_customer.id, 7)
             new_user.set_stripe_subscription(
@@ -788,11 +765,6 @@ def update_users_last_language(source_code):
     user = User.get_by_id(current_user)
 
     accessed_languages = json.loads(user.accessed_languages)
-    # print(accessed_languages)
-
-    # accessed_languages = []
-    # user.accessed_languages = json.dumps(accessed_languages)
-    # db.session.commit()
 
     if user.last_language != source_code:
         user.update_current_text(None)
@@ -813,7 +785,6 @@ def update_users_last_language(source_code):
 
 @app.route('/languages', methods=['GET'])
 @cross_origin()
-# @jwt_required()
 def get_all_languages():
 
     languages = Language.get_all_options()
@@ -831,10 +802,7 @@ def save_input_text_by_api():
     current_user = get_jwt_identity()
     user = User.get_by_id(current_user)
 
-    # user_id = user.id
-    # source_code = request.json['source_code']
     text = request.json['text']
-
     current_text = user.update_current_text(text)
 
     response = {
@@ -1012,7 +980,6 @@ def edit_variation_by_api(id):
     form = VocabComponentForm()
     if form.validate():
 
-        # id = request.json['id']
         user_id = user.id
         part_of_speech = request.json['part_of_speech']
         word = request.json['word']

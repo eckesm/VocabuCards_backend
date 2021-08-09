@@ -4,9 +4,12 @@ import random
 
 from sqlalchemy.sql.expression import false
 
+# uses http://www.wmutils.com/fulltextrss/ for processing full text rss
+
 RSS_NEWS_SOURCES = {
     'de': {
-        'url': 'http://rss.focus.de/fol/XML/rss_folnews.xml',
+        # 'url': 'http://rss.focus.de/fol/XML/rss_folnews.xml',
+        'url': 'http://www.wmutils.com/fulltextrss/makefulltextfeed.php?url=http%3A%2F%2Frss.focus.de%2Ffol%2FXML%2Frss_folnews.xml&max=25&links=preserve&exc=',
         'source': 'Focus'
     },
     'es': {
@@ -18,7 +21,8 @@ RSS_NEWS_SOURCES = {
         'source': 'Le Monde'
     },
     'it': {
-        'url': 'https://www.ansa.it/sito/ansait_rss.xml',
+        # 'url': 'https://www.ansa.it/sito/ansait_rss.xml',
+        'url': 'http://www.wmutils.com/fulltextrss/makefulltextfeed.php?url=https%3A%2F%2Fwww.ansa.it%2Fsito%2Fansait_rss.xml&max=25&links=preserve&exc=',
         'source': 'ANSA.it'
     },
     'sv': {
@@ -40,24 +44,26 @@ def getArticleFromRSS(source_code):
     url = RSS_NEWS_SOURCES[source_code]['url']
     NewsFeed = feedparser.parse(url)
 
+    # print('NewsFeed', NewsFeed)
+
     entriesCount = len(NewsFeed.entries)
     entryNum = random.randint(0, entriesCount)
     entry = NewsFeed.entries[entryNum]
 
-    # print(entriesCount)
-    # print(entryNum)
-
-    # return (entry)
+    print(f"{entryNum} / {entriesCount}")
 
     if source_code == 'de':
         article = {
             'author': RSS_NEWS_SOURCES[source_code]['source'],
             'link': entry['link'],
             'pubDate': entry['published'],
-            'text': cleanhtml(entry['content'][1]['value']),
+            # 'text': cleanhtml(entry['content'][1]['value']),
+            'text': cleanhtml(entry['summary']),
             'title': entry['title'],
-            'fullText': False
+            # 'fullText': False
+            'fullText': True
         }
+        # print(article)
         return(article)
 
     if source_code == 'es':
@@ -83,16 +89,18 @@ def getArticleFromRSS(source_code):
         return(article)
 
     if source_code == 'it':
-        print(entry)
+        # print(entry)
         article = {
             'author': RSS_NEWS_SOURCES[source_code]['source'],
             'link': entry['link'],
             'pubDate': entry['published'],
-            'text': entry['summary'],
+            # 'text': entry['summary'],
+            'text': cleanhtml(entry['summary']),
             'title': entry['title'],
-            'fullText': False
+            # 'fullText': False
+            'fullText': True
         }
-        print(article)
+        # print(article)
         return(article)
 
     if source_code == 'sv':
