@@ -164,6 +164,8 @@ def handle_customer_subscription_updated(subscription):
     period_start = subscription['current_period_start']
     period_end = subscription['current_period_end']
     cancel_at_period_end = subscription['cancel_at_period_end']
+    default_payment_method = subscription['default_payment_method']
+
     user = User.get_by_stripe_customer_id(customer_id)
     user.update_stripe_subscription(
         subscription_id, price_id, product_id, period_start, period_end, get_plan_name(price_id))
@@ -171,6 +173,8 @@ def handle_customer_subscription_updated(subscription):
         user.set_subscription_status("expiring")
     else:
         user.set_subscription_status("renewing")
+        if default_payment_method is None:
+            user.set_stripe_payment_method(None)
 
 
 # def handle_customer_subscription_created(subscription):

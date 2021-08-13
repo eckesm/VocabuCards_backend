@@ -397,8 +397,8 @@ def login_user_via_API():
                     user.stripe_subscription_id, "trial", "expiring", unix_timestamp_plus_7_days)
                 user.set_trial_end(unix_timestamp_plus_7_days)
 
-            if user.subscription_status == "renewing" and user.stripe_payment_method is None:
-                user.set_stripe_payment_method('payment_attached')
+            # if user.subscription_status == "renewing" and user.stripe_payment_method is None:
+                # user.set_stripe_payment_method('payment_attached')
 
             response = {
                 'status': 'success',
@@ -689,7 +689,6 @@ def get_user_start_information():
     # print(float(user.stripe_period_end))
 
     if (float(unix_timestamp) > float(user.stripe_period_end)) and user.account_override is None:
-        print('EXPIRED')
         user.set_subscription_status('expired')
         response = {
             'account_override': user.account_override,
