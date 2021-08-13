@@ -123,10 +123,14 @@ def create_event(payload, sig_header):
         print(f"Subscription updated for {subscription['customer']} succeeded")
         handle_customer_subscription_updated(subscription)
 
+    elif event and event['type'] == 'invoice.payment_failed':
+        payment = event['data']['object']
+        print(f"Payment for {payment['customer']} failed")
+        handle_invoice_payment_failed(payment)
+
     elif event and event['type'] == 'customer.subscription.created':
         subscription = event['data']['object']
         print(f"Subscription created for {subscription['customer']} succeeded")
-        # handle_customer_subscription_created(subscription)
 
     else:
         # Unexpected event type
@@ -137,13 +141,11 @@ def create_event(payload, sig_header):
 
 def handle_payment_intent_succeeded(payment_intent):
     user = User.get_by_stripe_customer_id(payment_intent['customer'])
-    # user.set_stripe_payment_method("setup_intent")
     user.set_subscription_status("setup_intent")
 
 
 def handle_setup_intent_succeeded(setup_intent):
     user = User.get_by_stripe_customer_id(setup_intent['customer'])
-    # user.set_stripe_payment_method("payment_intent")
     user.set_subscription_status("payment_intent")
 
 
@@ -152,12 +154,23 @@ def handle_payment_method_attached(payment_method):
     user.set_stripe_payment_method("payment_method_attached")
 
 
+def handle_invoice_payment_failed(payment):
+    user = User.get_by_stripe_customer_id(payment['customer'])
+
+    # subscription_id = payment['subscription']
+    # period_start = payment['period_start']
+    period_end = payment['period_end']
+    # default_payment_method = payment['default_payment_method']
+
+    user.set_stripe_period_end(period_end)
+    user.set_stripe_payment_method("payment_failed")
+
+
 def handle_customer_subscription_updated(subscription):
     customer_id = subscription['customer']
 
     place = len(subscription['items']['data'])-1
 
-    # subscription_id = subscription['items']['data'][place]['subscription']
     subscription_id = subscription['id']
     price_id = subscription['items']['data'][place]['price']['id']
     product_id = subscription['items']['data'][place]['price']['product']

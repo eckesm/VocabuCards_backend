@@ -178,6 +178,13 @@ class User(db.Model):
         db.session.commit()
         return self.trial_end
 
+    def set_period_end(self, period_end):
+        """Set the trial period end date."""
+        self.stripe_period_end = period_end
+        db.session.add(self)
+        db.session.commit()
+        return self.stripe_period_end
+
     def confirm_email_address(self):
         """Update is_email_confirmed to True and clear email_confirm_token."""
         self.is_email_confirmed = True
