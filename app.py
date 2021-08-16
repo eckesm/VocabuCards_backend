@@ -3,6 +3,7 @@ from datetime import datetime
 from flask import Flask, request, jsonify
 from flask_debugtoolbar import DebugToolbarExtension
 from flask_mail import Mail, Message
+from stripe.api_resources import subscription
 # from stripe.api_resources import price
 from models import db, connect_db, Language, User, VocabWord, VocabWordComponent
 from starter_cards import create_all_language_starters
@@ -292,7 +293,6 @@ def stripe_webhook_received():
 
     event = stripe_payments.create_event(payload, sig_header)
     return event
-    # print(data)
 
 # -------------------------------------------------------------------
 
@@ -367,7 +367,10 @@ def login_user_via_API():
             refresh_token = create_refresh_token(identity=user)
             user.update_last_login()
             if user.first_login == True:
-                user.update_first_login()
+                # user.update_first_login()
+                user.first_login = False
+                db.session.add(user)
+                db.session.commit()
 
             # UPGRADING EARLIER ACCOUNT SETTINGS
 
@@ -375,27 +378,33 @@ def login_user_via_API():
                 # Create Stripe customer ID
                 new_customer = stripe_payments.create_customer_by_api(
                     user.id, user.email_address, user.name)
-                user.set_stripe_customer_id(new_customer.id)
+                # user.set_stripe_customer_id(new_customer.id)
+                user.stripe_customer_id = new_customer.id
+                db.session.add(user)
+                db.session.commit()
 
-            current_time = datetime.now()
-            unix_timestamp = current_time.timestamp()
-            unix_timestamp_plus_7_days = unix_timestamp + (7 * 24 * 60 * 60)
+            # current_time = datetime.now()
+            # unix_timestamp = current_time.timestamp()
+            # unix_timestamp_plus_7_days = unix_timestamp + (7 * 24 * 60 * 60)
 
-            if user.trial_end is None:
-                user.set_trial_end(unix_timestamp_plus_7_days)
+            # if user.trial_end is None:
+            # user.set_trial_end(unix_timestamp_plus_7_days)
 
             if user.stripe_subscription_id is None:
                 # Create Stripe trial subscription
                 new_subscription = stripe_payments.create_trial_subscription_by_api(
                     user.stripe_customer_id, 7)
-                user.set_stripe_subscription(
-                    new_subscription.id, "trial", "expiring", unix_timestamp_plus_7_days)
+                # user.set_stripe_subscription(
+                # new_subscription.id, "trial", "expiring", unix_timestamp_plus_7_days)
+                user.stripe_subscription_id = new_subscription.id
+                db.session.add(user)
+                db.session.commit()
 
-            if user.current_plan is None:
+            # if user.current_plan is None:
                 # Set current_plan to trial
-                user.set_stripe_subscription(
-                    user.stripe_subscription_id, "trial", "expiring", unix_timestamp_plus_7_days)
-                user.set_trial_end(unix_timestamp_plus_7_days)
+                # user.set_stripe_subscription(
+                #     user.stripe_subscription_id, "trial", "expiring", unix_timestamp_plus_7_days)
+                # user.set_trial_end(unix_timestamp_plus_7_days)
 
             # if user.subscription_status == "renewing" and user.stripe_payment_method is None:
                 # user.set_stripe_payment_method('payment_attached')
@@ -438,7 +447,10 @@ def logout_user_via_API():
         user.update_last_login()
 
         if user.first_login == True:
-            user.update_first_login()
+            # user.update_first_login()
+            user.first_login = False
+            db.session.add(user)
+            db.session.commit()
 
         response = {
             'status': 'success',
@@ -473,17 +485,19 @@ def register_user_via_API():
             return jsonify(response)
 
         current_time = datetime.now()
-        unix_timestamp = current_time.timestamp()
-        unix_timestamp_plus_7_days = unix_timestamp + (7 * 24 * 60 * 60)
+        # unix_timestamp = current_time.timestamp()
+        # unix_timestamp_plus_7_days = unix_timestamp + (7 * 24 * 60 * 60)
 
         new_user = User.register(
-            name, email_address, password, unix_timestamp_plus_7_days, source_code)
+            # name, email_address, password, unix_timestamp_plus_7_days, source_code)
+            name, email_address, password, source_code)
 
         if new_user:
             # Create Stripe customer ID
             new_customer = stripe_payments.create_customer_by_api(
                 new_user.id, email_address, name)
-            new_user.set_stripe_customer_id(new_customer.id)
+            # new_user.set_stripe_customer_id(new_customer.id)
+            new_user.stripe_customer_id = new_customer.id
 
             # Create Stripe trial subscription
             # UNIX_Now = int(time.time())
@@ -491,8 +505,12 @@ def register_user_via_API():
             # print('UNIX_Now', UNIX_Now)
             new_subscription = stripe_payments.create_trial_subscription_by_api(
                 new_customer.id, 7)
-            new_user.set_stripe_subscription(
-                new_subscription.id, "trial", "expiring", unix_timestamp_plus_7_days)
+            # new_user.set_stripe_subscription(
+            # new_subscription.id, "trial", "expiring", unix_timestamp_plus_7_days)
+            new_user.stripe_subscription_id = new_subscription.id
+
+            db.session.add(new_user)
+            db.session.commit()
 
             # Send email address confirmation link
             confirmation_email = send_confirm_email_link(email_address)
@@ -685,11 +703,38 @@ def get_user_start_information():
     current_time = datetime.now()
     unix_timestamp = current_time.timestamp()
 
+    subscription = stripe_payments.retrieve_subscription(
+        user.stripe_subscription_id)
+    print(subscription)
+
+    subscription_status = subscription.status
+    payment_method = subscription.default_payment_method
+    cancel_at_period_end = subscription.cancel_at_period_end
+    canceled_at = subscription.canceled_at
+    # ended_at = subscription.ended_at
+    period_start = subscription.current_period_start
+    period_end = subscription.current_period_end
+    trial_start = subscription.trial_start
+    trial_end = subscription.trial_end
+    price_id = subscription.plan.id
+    product_id = subscription.plan.product
+
+    current_plan = stripe_payments.get_plan_name(price_id)
+
+    # user.set_subscription_status(subscription.status)
+    # user.set_stripe_payment_method(subscription.default_payment_method)
+    # user.set_period_end(subscription.current_period_end)
+
+    user.update_retrieved_stripe_subscription_information(
+        subscription_status, payment_method, period_start, period_end, trial_start, trial_end, price_id, product_id, current_plan)
+
     # print(float(unix_timestamp))
     # print(float(user.stripe_period_end))
 
-    if (float(unix_timestamp) > float(user.stripe_period_end)) and user.account_override is None:
-        user.set_subscription_status('expired')
+    # if (float(unix_timestamp) > float(user.stripe_period_end)) and user.account_override is None:
+    if (subscription_status != 'active' and subscription_status != 'trialing') and user.account_override is None:
+
+        # user.set_subscription_status('expired')
         response = {
             'account_override': user.account_override,
             'current_plan': user.current_plan,
@@ -701,12 +746,20 @@ def get_user_start_information():
             'last_source_code': last_language,
             'name': user.name,
             # 'news_sources': RSS_NEWS_SOURCES,
+            'stripe_cancel_at_period_end': cancel_at_period_end,
+            'stripe_canceled_at': canceled_at,
             'stripe_customer_id': user.stripe_customer_id,
-            'stripe_payment_method': user.stripe_payment_method,
-            'stripe_period_start': user.stripe_period_start,
-            'stripe_period_end': user.stripe_period_end,
-            'subscription_status': user.subscription_status,
-            'trial_end': user.trial_end,
+            # 'stripe_payment_method': user.stripe_payment_method,
+            'stripe_payment_method': payment_method,
+            # 'stripe_period_end': user.stripe_period_end,
+            'stripe_period_end': period_end,
+            # 'stripe_period_start': user.stripe_period_start,
+            'stripe_period_start': period_start,
+            # 'subscription_status': user.subscription_status,
+            'subscription_status': subscription_status,
+            # 'trial_end': user.trial_end,
+            'trial_end': trial_end,
+            'trial_start': trial_start,
             'user': user.email_address,
             # 'words_array': [word.serialize_and_components() for word in words]
         }
@@ -724,12 +777,20 @@ def get_user_start_information():
             'last_source_code': last_language,
             'name': user.name,
             'news_sources': RSS_NEWS_SOURCES,
+            'stripe_cancel_at_period_end': cancel_at_period_end,
+            'stripe_canceled_at': canceled_at,
             'stripe_customer_id': user.stripe_customer_id,
-            'stripe_payment_method': user.stripe_payment_method,
-            'stripe_period_start': user.stripe_period_start,
-            'stripe_period_end': user.stripe_period_end,
-            'subscription_status': user.subscription_status,
-            'trial_end': user.trial_end,
+            # 'stripe_payment_method': user.stripe_payment_method,
+            'stripe_payment_method': payment_method,
+            # 'stripe_period_end': user.stripe_period_end,
+            'stripe_period_end': period_end,
+            # 'stripe_period_start': user.stripe_period_start,
+            'stripe_period_start': period_start,
+            # 'subscription_status': user.subscription_status,
+            'subscription_status': subscription_status,
+            # 'trial_end': user.trial_end,
+            'trial_end': trial_end,
+            'trial_start': trial_start,
             'user': user.email_address,
             'words_array': [word.serialize_and_components() for word in words]
         }
@@ -766,7 +827,10 @@ def update_users_last_language(source_code):
     accessed_languages = json.loads(user.accessed_languages)
 
     if user.last_language != source_code:
-        user.update_current_text(None)
+        # user.update_current_text(None)
+        user.current_text = None
+        db.session.add(user)
+        db.session.commit()
 
     if source_code not in accessed_languages:
         accessed_languages.append(source_code)
@@ -775,7 +839,10 @@ def update_users_last_language(source_code):
         create_all_language_starters(
             user.id, source_code)
 
-    user.update_last_language(source_code)
+    # user.update_last_language(source_code)
+    user.last_language=source_code
+    db.session.add(user)
+    db.session.commit()
 
     return jsonify(user.last_language)
 
@@ -802,10 +869,13 @@ def save_input_text_by_api():
     user = User.get_by_id(current_user)
 
     text = request.json['text']
-    current_text = user.update_current_text(text)
+    # current_text = user.update_current_text(text)
+    user.current_text = text
+    db.session.add(user)
+    db.session.commit()
 
     response = {
-        'text': current_text,
+        'text': user.current_text,
         'status': 'success'
     }
     return jsonify(response)

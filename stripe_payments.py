@@ -25,6 +25,9 @@ STRIPE_ANNUALLY_PLAN_PRICE_ID = os.environ.get('STRIPE_ANNUALLY_PLAN_PRICE_ID')
 #     )
 
 
+def retrieve_subscription(subscription_id):
+    return stripe.Subscription.retrieve(subscription_id)
+
 def create_checkout_session(price_id, user_id, stripe_customer_id, react_app_url):
     session = stripe.checkout.Session.create(
         # success_url='https://example.com/success.html?session_id={CHECKOUT_SESSION_ID}',
@@ -100,33 +103,33 @@ def create_event(payload, sig_header):
     if event and event['type'] == 'payment_intent.succeeded':
         payment_intent = event['data']['object']
         print(f"Payment Intent for {payment_intent['customer']} succeeded")
-        handle_payment_intent_succeeded(payment_intent)
+        # handle_payment_intent_succeeded(payment_intent)
 
     elif event and event['type'] == 'setup_intent.succeeded':
         setup_intent = event['data']['object']
         print(f"Setup Payment Intent for {setup_intent['customer']} succeeded")
-        handle_setup_intent_succeeded(setup_intent)
+        # handle_setup_intent_succeeded(setup_intent)
 
     elif event and event['type'] == 'invoice.paid':
         invoice = event['data']['object']
         print(f"Invoice Paid for {invoice['customer']} succeeded")
-        handle_invoice_paid(invoice)
+        # handle_invoice_paid(invoice)
 
     elif event and event['type'] == 'payment_method.attached':
         payment_method = event['data']['object']
         print(
             f"Payment Method Attached for {payment_method['customer']} succeeded")
-        handle_payment_method_attached(payment_method)
+        # handle_payment_method_attached(payment_method)
 
     elif event and event['type'] == 'customer.subscription.updated':
         subscription = event['data']['object']
         print(f"Subscription updated for {subscription['customer']} succeeded")
-        handle_customer_subscription_updated(subscription)
+        # handle_customer_subscription_updated(subscription)
 
     elif event and event['type'] == 'invoice.payment_failed':
         payment = event['data']['object']
         print(f"Payment for {payment['customer']} failed")
-        handle_invoice_payment_failed(payment)
+        # handle_invoice_payment_failed(payment)
 
     elif event and event['type'] == 'customer.subscription.created':
         subscription = event['data']['object']
