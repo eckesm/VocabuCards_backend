@@ -28,6 +28,7 @@ STRIPE_ANNUALLY_PLAN_PRICE_ID = os.environ.get('STRIPE_ANNUALLY_PLAN_PRICE_ID')
 def retrieve_subscription(subscription_id):
     return stripe.Subscription.retrieve(subscription_id)
 
+
 def create_checkout_session(price_id, user_id, stripe_customer_id, react_app_url):
     session = stripe.checkout.Session.create(
         # success_url='https://example.com/success.html?session_id={CHECKOUT_SESSION_ID}',
@@ -82,7 +83,8 @@ def create_trial_subscription_by_api(customer_id, trial_period_days):
                 'price': STRIPE_DEFAULT_PRICE_ID
             }
         ],
-        trial_period_days=trial_period_days
+        trial_period_days=trial_period_days,
+        cancel_at_period_end=True
     )
 
 
