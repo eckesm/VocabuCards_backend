@@ -713,7 +713,7 @@ def get_user_start_information():
 
     subscription = stripe_payments.retrieve_subscription(
         user.stripe_subscription_id)
-    print(subscription)
+    # print(subscription)
 
     subscription_status = subscription.status
     payment_method = subscription.default_payment_method

@@ -67,7 +67,7 @@ class TranslationWord:
             return new_translation.translated_word
 
         else:
-            print(f"EXISTING: {existing_translation}", file=sys.stderr)
+            # print(f"EXISTING: {existing_translation}", file=sys.stderr)
             return existing_translation.translated_word
 
 
@@ -99,5 +99,5 @@ class DictionaryWord:
             return new_dictionary.definitions
 
         else:
-            print(f"EXISTING: {existing_entry}", file=sys.stderr)
+            # print(f"EXISTING: {existing_entry}", file=sys.stderr)
             return existing_entry.definitions

@@ -205,7 +205,7 @@ def create_event(payload, sig_header):
 
 def handle_customer_subscription_created(subscription):
 
-    print(subscription)
+    # print(subscription)
 
     customer_id = subscription['customer']
     subscription_id = subscription['id']
