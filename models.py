@@ -147,6 +147,13 @@ class User(db.Model):
         db.session.commit()
         return self.last_login
 
+    def update_stripe_subscription_id(self, stripe_subscription_id):
+        """Update user's Stripe subscription ID."""
+        self.stripe_subscription_id = stripe_subscription_id
+        db.session.add(self)
+        db.session.commit()
+        return self.stripe_subscription_id
+
     # def update_first_login(self):
     #     """Update user's first login status to false."""
     #     self.first_login = False

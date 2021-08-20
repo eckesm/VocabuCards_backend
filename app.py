@@ -268,17 +268,17 @@ def create_checkout_session_route():
     price_id = request.json['price_id']
     stripe_customer_id = request.json['stripe_customer_id']
 
-    if stripe_customer_id is None:
-        new_customer = stripe_payments.create_customer_by_api(
-            user.id, user.email_address, user.name)
-        customer_id = new_customer.id
-    else:
-        customer_id = stripe_customer_id
+    # if stripe_customer_id is None:
+    #     new_customer = stripe_payments.create_customer_by_api(
+    #         user.id, user.email_address, user.name)
+    #     customer_id = new_customer.id
+    # else:
+    #     customer_id = stripe_customer_id
 
-    user.set_stripe_customer_id(customer_id)
+    # user.set_stripe_customer_id(customer_id)
 
     session = stripe_payments.create_checkout_session(
-        price_id, user.id, customer_id, react_app_url)
+        price_id, user.id, stripe_customer_id, react_app_url)
 
     return jsonify({'url': session.url})
 
@@ -303,6 +303,14 @@ def stripe_webhook_received():
 def create_billing_portal_session_route():
 
     stripe_customer_id = request.json['stripe_customer_id']
+
+    # if new_subscription:
+    #     new_subscription_object = stripe_payments.create_new_subscription_by_api(
+    #         stripe_customer_id)
+    #     user = User.get_by_stripe_customer_id(stripe_customer_id)
+    #     user.stripe_subscription_id = new_subscription_object.id
+    #     db.session.add(user)
+    #     db.session.commit()
 
     session = stripe_payments.create_billing_portal_session(
         stripe_customer_id, react_app_url)
@@ -840,7 +848,7 @@ def update_users_last_language(source_code):
             user.id, source_code)
 
     # user.update_last_language(source_code)
-    user.last_language=source_code
+    user.last_language = source_code
     db.session.add(user)
     db.session.commit()
 

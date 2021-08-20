@@ -88,6 +88,18 @@ def create_trial_subscription_by_api(customer_id, trial_period_days):
     )
 
 
+# def create_new_subscription_by_api(customer_id):
+#     return stripe.Subscription.create(
+#         customer=customer_id,
+#         items=[
+#             {
+#                 'price': STRIPE_DEFAULT_PRICE_ID
+#             }
+#         ],
+#         cancel_at_period_end=False
+#     )
+
+
 def create_event(payload, sig_header):
     # https://stripe.com/docs/webhooks/build
     event = None
@@ -102,97 +114,104 @@ def create_event(payload, sig_header):
         return jsonify(success=False)
 
     # Handle the event
-    if event and event['type'] == 'payment_intent.succeeded':
-        payment_intent = event['data']['object']
-        print(f"Payment Intent for {payment_intent['customer']} succeeded")
+    # if event and event['type'] == 'payment_intent.succeeded':
+    #     payment_intent = event['data']['object']
+    #     print(f"Payment Intent for {payment_intent['customer']} succeeded")
         # handle_payment_intent_succeeded(payment_intent)
 
-    elif event and event['type'] == 'setup_intent.succeeded':
-        setup_intent = event['data']['object']
-        print(f"Setup Payment Intent for {setup_intent['customer']} succeeded")
+    # elif event and event['type'] == 'setup_intent.succeeded':
+    #     setup_intent = event['data']['object']
+    #     print(f"Setup Payment Intent for {setup_intent['customer']} succeeded")
         # handle_setup_intent_succeeded(setup_intent)
 
-    elif event and event['type'] == 'invoice.paid':
-        invoice = event['data']['object']
-        print(f"Invoice Paid for {invoice['customer']} succeeded")
+    # elif event and event['type'] == 'invoice.paid':
+    #     invoice = event['data']['object']
+    #     print(f"Invoice Paid for {invoice['customer']} succeeded")
         # handle_invoice_paid(invoice)
 
-    elif event and event['type'] == 'payment_method.attached':
-        payment_method = event['data']['object']
-        print(
-            f"Payment Method Attached for {payment_method['customer']} succeeded")
+    # elif event and event['type'] == 'payment_method.attached':
+    #     payment_method = event['data']['object']
+    #     print(
+    #         f"Payment Method Attached for {payment_method['customer']} succeeded")
         # handle_payment_method_attached(payment_method)
 
-    elif event and event['type'] == 'customer.subscription.updated':
-        subscription = event['data']['object']
-        print(f"Subscription updated for {subscription['customer']} succeeded")
+    # elif event and event['type'] == 'customer.subscription.updated':
+    #     subscription = event['data']['object']
+    #     print(f"Subscription updated for {subscription['customer']} succeeded")
         # handle_customer_subscription_updated(subscription)
 
-    elif event and event['type'] == 'invoice.payment_failed':
-        payment = event['data']['object']
-        print(f"Payment for {payment['customer']} failed")
+    # elif event and event['type'] == 'invoice.payment_failed':
+    #     payment = event['data']['object']
+    #     print(f"Payment for {payment['customer']} failed")
         # handle_invoice_payment_failed(payment)
 
-    elif event and event['type'] == 'customer.subscription.created':
+    if event and event['type'] == 'customer.subscription.created':
         subscription = event['data']['object']
         print(f"Subscription created for {subscription['customer']} succeeded")
+        handle_customer_subscription_created(subscription)
 
-    else:
+    # else:
         # Unexpected event type
-        print('Unhandled event type {}'.format(event['type']))
+        # print('Unhandled event type {}'.format(event['type']))
 
     return jsonify(success=True)
 
 
-def handle_payment_intent_succeeded(payment_intent):
-    user = User.get_by_stripe_customer_id(payment_intent['customer'])
-    user.set_subscription_status("setup_intent")
+# def handle_payment_intent_succeeded(payment_intent):
+#     user = User.get_by_stripe_customer_id(payment_intent['customer'])
+#     user.set_subscription_status("setup_intent")
 
 
-def handle_setup_intent_succeeded(setup_intent):
-    user = User.get_by_stripe_customer_id(setup_intent['customer'])
-    user.set_subscription_status("payment_intent")
+# def handle_setup_intent_succeeded(setup_intent):
+#     user = User.get_by_stripe_customer_id(setup_intent['customer'])
+#     user.set_subscription_status("payment_intent")
 
 
-def handle_payment_method_attached(payment_method):
-    user = User.get_by_stripe_customer_id(payment_method['customer'])
-    user.set_stripe_payment_method("payment_method_attached")
+# def handle_payment_method_attached(payment_method):
+#     user = User.get_by_stripe_customer_id(payment_method['customer'])
+#     user.set_stripe_payment_method("payment_method_attached")
 
 
-def handle_invoice_payment_failed(payment):
-    user = User.get_by_stripe_customer_id(payment['customer'])
-
-    # subscription_id = payment['subscription']
-    # period_start = payment['period_start']
-    period_end = payment['period_end']
-    # default_payment_method = payment['default_payment_method']
-
-    user.set_stripe_period_end(period_end)
-    user.set_stripe_payment_method("payment_failed")
+# def handle_invoice_payment_failed(payment):
+#     user = User.get_by_stripe_customer_id(payment['customer'])
+#     period_end = payment['period_end']
+#     user.set_stripe_period_end(period_end)
+#     user.set_stripe_payment_method("payment_failed")
 
 
-def handle_customer_subscription_updated(subscription):
+# def handle_customer_subscription_updated(subscription):
+#     customer_id = subscription['customer']
+
+#     place = len(subscription['items']['data'])-1
+
+#     subscription_id = subscription['id']
+#     price_id = subscription['items']['data'][place]['price']['id']
+#     product_id = subscription['items']['data'][place]['price']['product']
+#     period_start = subscription['current_period_start']
+#     period_end = subscription['current_period_end']
+#     cancel_at_period_end = subscription['cancel_at_period_end']
+#     default_payment_method = subscription['default_payment_method']
+
+#     user = User.get_by_stripe_customer_id(customer_id)
+#     user.update_stripe_subscription(
+#         subscription_id, price_id, product_id, period_start, period_end, get_plan_name(price_id))
+#     if cancel_at_period_end:
+#         user.set_subscription_status("expiring")
+#     else:
+#         user.set_subscription_status("renewing")
+#         if default_payment_method is None:
+#             user.set_stripe_payment_method(None)
+
+
+def handle_customer_subscription_created(subscription):
+
+    print(subscription)
+
     customer_id = subscription['customer']
-
-    place = len(subscription['items']['data'])-1
-
     subscription_id = subscription['id']
-    price_id = subscription['items']['data'][place]['price']['id']
-    product_id = subscription['items']['data'][place]['price']['product']
-    period_start = subscription['current_period_start']
-    period_end = subscription['current_period_end']
-    cancel_at_period_end = subscription['cancel_at_period_end']
-    default_payment_method = subscription['default_payment_method']
 
     user = User.get_by_stripe_customer_id(customer_id)
-    user.update_stripe_subscription(
-        subscription_id, price_id, product_id, period_start, period_end, get_plan_name(price_id))
-    if cancel_at_period_end:
-        user.set_subscription_status("expiring")
-    else:
-        user.set_subscription_status("renewing")
-        if default_payment_method is None:
-            user.set_stripe_payment_method(None)
+    user.update_stripe_subscription_id(subscription_id)
 
 
 # def handle_customer_subscription_created(subscription):
@@ -216,22 +235,22 @@ def handle_customer_subscription_updated(subscription):
 #         user.set_subscription_status("renewing")
 
 
-def handle_invoice_paid(invoice):
-    customer_id = invoice['customer']
-    subscription_id = invoice['subscription']
+# def handle_invoice_paid(invoice):
+#     customer_id = invoice['customer']
+#     subscription_id = invoice['subscription']
 
-    place = len(invoice['lines']['data'])-1
+#     place = len(invoice['lines']['data'])-1
 
-    price_id = invoice['lines']['data'][place]['price']['id']
-    product_id = invoice['lines']['data'][place]['price']['product']
-    period_start = invoice['lines']['data'][place]['period']['start']
-    period_end = invoice['lines']['data'][place]['period']['end']
-    amount_paid = invoice['amount_paid']
-    user = User.get_by_stripe_customer_id(customer_id)
-    user.update_stripe_subscription(
-        subscription_id, price_id, product_id, period_start, period_end, get_plan_name(price_id))
-    if amount_paid != 0:
-        user.set_stripe_payment_method("paid")
+#     price_id = invoice['lines']['data'][place]['price']['id']
+#     product_id = invoice['lines']['data'][place]['price']['product']
+#     period_start = invoice['lines']['data'][place]['period']['start']
+#     period_end = invoice['lines']['data'][place]['period']['end']
+#     amount_paid = invoice['amount_paid']
+#     user = User.get_by_stripe_customer_id(customer_id)
+#     user.update_stripe_subscription(
+#         subscription_id, price_id, product_id, period_start, period_end, get_plan_name(price_id))
+#     if amount_paid != 0:
+#         user.set_stripe_payment_method("paid")
 
 
 def get_plan_name(price_id):
