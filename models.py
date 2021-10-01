@@ -43,16 +43,85 @@ class Language(db.Model):
     __tablename__ = 'languages'
 
     id = db.Column(db.String(5), primary_key=True)
+    active = db.Column(db.Boolean, nullable=False, default=True)
     language = db.Column(db.Text, nullable=False, unique=True)
     english = db.Column(db.Text, nullable=False, unique=True)
 
     @classmethod
     def get_all_options(cls):
-        return [(language.id, language.english) for language in Language.query.all()]
+        # return [(language.id, language.english) for language in Language.query.all()]
+        return [(language.id, language.english) for language in cls.query.filter_by(active=True).all()]
 
     @classmethod
     def get_all_option_choices(cls):
-        return [(language.id) for language in Language.query.all()]
+        # return [(language.id) for language in Language.query.all()]
+        return [(language.id) for language in cls.query.filter_by(active=True).all()]
+
+
+class Article(db.Model):
+    """Article model."""
+
+    __tablename__ = 'articles'
+
+    id = db.Column(db.Text, primary_key=True)
+    active = db.Column(db.Boolean, nullable=False, default=True)
+    language = db.Column(db.String(5), db.ForeignKey('languages.id'))
+    url = db.Column(db.Text, nullable=False, unique=True)
+    publication = db.Column(db.Text, nullable=False)
+    author = db.Column(db.Text, nullable=False)
+    publication_date = db.Column(db.Date, nullable=False)
+    title = db.Column(db.Text, nullable=False)
+    text = db.Column(db.Text)
+    full_text = db.Column(db.Boolean, nullable=False, default=True)
+    created_at = db.Column(db.DateTime, nullable=False,
+                           server_default=func.now())
+
+    def __repr__(self):
+        return f"<Article id: {self.id} [{self.language}] | source: {self.publication} | title: {self.title} | url: {self.url} >"
+
+    def serialize(self):
+        return{
+            'id': self.id,
+            'language': self.language,
+            'url': self.url,
+            'publication': self.publication,
+            'author': self.author,
+            'publication_date': self.publication_date,
+            'title': self.title,
+            'text': self.text,
+            'full_text': self.full_text,
+            'created_at': self.created_at,
+
+        }
+
+    @classmethod
+    def get_by_id(cls, id):
+        return cls.query.filter_by(id=id).one_or_none()
+
+    @classmethod
+    def get_by_url(cls, url):
+        return cls.query.filter_by(url=url).one_or_none()
+
+    @classmethod
+    def get_random_by_language(cls, source_code):
+        articles = cls.query.filter_by(language=source_code, active=True).all()
+        count = len(articles)
+        random_num = random.randint(0, count-1)
+        return articles[random_num].serialize()
+
+    @classmethod
+    def get_all_by_language(cls, source_code):
+        articles = cls.query.filter_by(language=source_code, active=True).all()
+        serialized_articles = [article.serialize() for article in articles]
+        return serialized_articles
+
+    @classmethod
+    def add_article(cls, article):
+        new_article = cls(id=generate_random_string(
+            10, cls.get_by_id), language=article['language'], url=article['url'], publication=article['publication'], author=article['author'], publication_date=article['publication_date'], title=article['title'], text=article['text'], full_text=article['full_text'])
+        db.session.add(new_article)
+        db.session.commit()
+        return new_article
 
 
 class User(db.Model):

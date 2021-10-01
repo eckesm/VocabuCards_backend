@@ -5,7 +5,7 @@ from flask_debugtoolbar import DebugToolbarExtension
 from flask_mail import Mail, Message
 from stripe.api_resources import subscription
 # from stripe.api_resources import price
-from models import db, connect_db, Language, User, VocabWord, VocabWordComponent
+from models import db, connect_db, Language, User, VocabWord, VocabWordComponent, Article
 from starter_cards import create_all_language_starters
 from forms import LoginForm, AddUserForm, VocabWordForm, VocabComponentForm, VocabWordAndComponentForm
 from word import TranslationWord, DictionaryWord
@@ -64,6 +64,7 @@ jwt = JWTManager(app)
 toolbar = DebugToolbarExtension(app)
 connect_db(app)
 
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> FUNCTIONS <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< #
 
 #####################################################################
 # ------------------------- JWT Tokens -----------------------------#
@@ -191,22 +192,11 @@ def send_password_reset_link(email_address):
         }
 
 
+# >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> API ROUTES <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< #
+
 #####################################################################
-# ------------------------- API Routes -----------------------------#
+# ----------------------- JWT API Routes ---------------------------#
 #####################################################################
-
-
-# @app.route('/starters', methods=['GET'])
-# @cross_origin()
-# @jwt_required()
-# def create_starter_words_via_API():
-
-#     current_user = get_jwt_identity()
-#     user = User.get_by_id(current_user)
-#     response = create_all_starters(user.id)
-#     return jsonify(response)
-
-# -------------------------------------------------------------------
 
 @app.route('/refresh', methods=['GET'])
 @cross_origin()
@@ -227,15 +217,6 @@ def refresh_access_token():
 # -------------------------------------------------------------------
 
 
-@app.route('/news/<source_code>', methods=['GET'])
-@cross_origin()
-def getArticleUnprotected(source_code):
-    article = getArticleFromRSS(source_code)
-    return(jsonify(article))
-
-# -------------------------------------------------------------------
-
-
 @app.route('/test', methods=['GET'])
 @cross_origin()
 @jwt_required()
@@ -246,8 +227,10 @@ def test_access_token():
     }
     return jsonify(response)
 
-# -------------------------------------------------------------------
 
+#####################################################################
+# ---------------------- Stripe API Routes ------------------------ #
+#####################################################################
 
 @app.route('/test-stripe', methods=['GET'])
 @cross_origin()
@@ -334,17 +317,22 @@ def get_stripe_customer_id():
     return jsonify(response)
 
 
+#####################################################################
+# ---------------------- User & Authentication -------------------- #
+#####################################################################
+
+
+# @app.route('/starters', methods=['GET'])
+# @cross_origin()
+# @jwt_required()
+# def create_starter_words_via_API():
+
+#     current_user = get_jwt_identity()
+#     user = User.get_by_id(current_user)
+#     response = create_all_starters(user.id)
+#     return jsonify(response)
+
 # -------------------------------------------------------------------
-
-@app.route('/get-news-article/<source_code>', methods=['GET'])
-@cross_origin()
-@jwt_required()
-def get_news_article(source_code):
-    article = getArticleFromRSS(source_code)
-    return(jsonify(article))
-
-# -------------------------------------------------------------------
-
 
 @app.route('/login', methods=['POST'])
 @cross_origin()
@@ -466,7 +454,6 @@ def logout_user_via_API():
             'message': f"{user.email_address} has been logged out successfully.",
             'last_login': user.last_login}
         return jsonify(response)
-
 
 # -------------------------------------------------------------------
 
@@ -639,7 +626,6 @@ def password_reset_via_API():
                 'message': "Your password has been updated successfully!"}
             return jsonify(response)
 
-
 # -------------------------------------------------------------------
 
 
@@ -650,50 +636,10 @@ def send_password_reset_via_API():
     response = send_password_reset_link(email_address)
     return jsonify(response)
 
-# -------------------------------------------------------------------
 
-
-@app.route('/translate/<word>/<source_code>/<translate_code>', methods=['GET'])
-@cross_origin()
-@jwt_required()
-def translate(word, source_code, translate_code):
-
-    if len(word) > 150:
-
-        return(jsonify('ERROR: text cannot exceed 150 characters.'))
-
-    word = TranslationWord(word, source_code, translate_code)
-    translation = word.translated_word
-    return jsonify(translation)
-
-
-# -------------------------------------------------------------------
-
-@app.route('/dictionary/<word>', methods=['GET'])
-@jwt_required()
-def search_dictionary(word):
-
-    word = DictionaryWord(word)
-    data = json.loads(word.definitions)
-    return jsonify(data)
-
-# -------------------------------------------------------------------
-
-
-@app.route('/variations/<component_id>', methods=['GET'])
-@jwt_required()
-def get_variation_data_by_api(component_id):
-
-    current_user = get_jwt_identity()
-    user = User.get_by_id(current_user)
-
-    component = VocabWordComponent.get_by_id(component_id)
-
-    if component.owner_id == user.id:
-        return jsonify(component.serialize())
-
-# -------------------------------------------------------------------
-
+#####################################################################
+# -------------------- Load User Settings & Data ------------------ #
+#####################################################################
 
 @app.route('/start', methods=['GET'])
 @cross_origin()
@@ -808,6 +754,21 @@ def get_user_start_information():
 # -------------------------------------------------------------------
 
 
+@app.route('/variations/<component_id>', methods=['GET'])
+@jwt_required()
+def get_variation_data_by_api(component_id):
+
+    current_user = get_jwt_identity()
+    user = User.get_by_id(current_user)
+
+    component = VocabWordComponent.get_by_id(component_id)
+
+    if component.owner_id == user.id:
+        return jsonify(component.serialize())
+
+# -------------------------------------------------------------------
+
+
 @app.route('/words/<source_code>', methods=['GET'])
 @cross_origin()
 @jwt_required()
@@ -820,6 +781,42 @@ def get_users_language_words(source_code):
         VocabWord.owner_id == user.id, VocabWord.source_code == source_code).order_by(VocabWord.root).all()
 
     return jsonify([word.serialize_and_components() for word in words])
+
+# -------------------------------------------------------------------
+
+
+@app.route('/renderedtext', methods=['PUT'])
+@cross_origin()
+@jwt_required()
+def save_input_text_by_api():
+
+    current_user = get_jwt_identity()
+    user = User.get_by_id(current_user)
+
+    text = request.json['text']
+    # current_text = user.update_current_text(text)
+    user.current_text = text
+    db.session.add(user)
+    db.session.commit()
+
+    response = {
+        'text': user.current_text,
+        'status': 'success'
+    }
+    return jsonify(response)
+
+
+#####################################################################
+# -------------------------- Languages ---------------------------- #
+#####################################################################
+
+@app.route('/languages', methods=['GET'])
+@cross_origin()
+def get_all_languages():
+
+    languages = Language.get_all_options()
+
+    return jsonify(languages)
 
 # -------------------------------------------------------------------
 
@@ -854,42 +851,39 @@ def update_users_last_language(source_code):
 
     return jsonify(user.last_language)
 
-# -------------------------------------------------------------------
 
+#####################################################################
+# ------------------- Translate & Dictionary ---------------------- #
+#####################################################################
 
-@app.route('/languages', methods=['GET'])
-@cross_origin()
-def get_all_languages():
-
-    languages = Language.get_all_options()
-
-    return jsonify(languages)
-
-# -------------------------------------------------------------------
-
-
-@app.route('/renderedtext', methods=['PUT'])
+@app.route('/translate/<word>/<source_code>/<translate_code>', methods=['GET'])
 @cross_origin()
 @jwt_required()
-def save_input_text_by_api():
+def translate(word, source_code, translate_code):
 
-    current_user = get_jwt_identity()
-    user = User.get_by_id(current_user)
+    if len(word) > 150:
 
-    text = request.json['text']
-    # current_text = user.update_current_text(text)
-    user.current_text = text
-    db.session.add(user)
-    db.session.commit()
+        return(jsonify('ERROR: text cannot exceed 150 characters.'))
 
-    response = {
-        'text': user.current_text,
-        'status': 'success'
-    }
-    return jsonify(response)
+    word = TranslationWord(word, source_code, translate_code)
+    translation = word.translated_word
+    return jsonify(translation)
 
 # -------------------------------------------------------------------
 
+
+@app.route('/dictionary/<word>', methods=['GET'])
+@jwt_required()
+def search_dictionary(word):
+
+    word = DictionaryWord(word)
+    data = json.loads(word.definitions)
+    return jsonify(data)
+
+
+#####################################################################
+# --------------------------- Word CRUD --------------------------- #
+#####################################################################
 
 @app.route('/words/new', methods=['POST'])
 @cross_origin()
@@ -1003,7 +997,9 @@ def delete_word_by_api(id):
     }
     return jsonify(response)
 
-# -------------------------------------------------------------------
+#####################################################################
+# ------------------------- Variation CRUD ------------------------ #
+#####################################################################
 
 
 @app.route('/variations/new', methods=['POST'])
@@ -1121,3 +1117,43 @@ def delete_variation_by_api(id):
         'status': 'deleted'
     }
     return jsonify(response)
+
+
+#####################################################################
+# ------------------------- News Article -------------------------- #
+#####################################################################
+
+
+@app.route('/news/<source_code>', methods=['GET'])
+@cross_origin()
+def getArticleUnprotected(source_code):
+    article = getArticleFromRSS(source_code)
+    return(jsonify(article))
+
+# -------------------------------------------------------------------
+
+
+@app.route('/articles/new/<source_code>', methods=['GET'])
+@cross_origin()
+# @jwt_required()
+def get_news_article(source_code):
+    article = getArticleFromRSS(source_code)
+    return(jsonify(article))
+
+# -------------------------------------------------------------------
+
+
+@app.route('/articles/saved/random/<source_code>', methods=['GET'])
+@cross_origin()
+def get_random_saved_news_article(source_code):
+    article = Article.get_random_by_language(source_code)
+    return(jsonify(article))
+
+# -------------------------------------------------------------------
+
+
+@app.route('/articles/saved/all/<source_code>', methods=['GET'])
+@cross_origin()
+def get_all_saved_news_article(source_code):
+    article = Article.get_all_by_language(source_code)
+    return(jsonify(article))

@@ -1,6 +1,7 @@
 import feedparser
 import re
 import random
+from models import Article
 
 from sqlalchemy.sql.expression import false, true
 
@@ -63,74 +64,87 @@ def getArticleFromRSS(source_code):
 
     if source_code == 'de':
         article = {
-            # 'author': RSS_NEWS_SOURCES[source_code]['source'],
-            # 'author': entry['author'],
             'author': author,
-            'link': entry['link'],
-            'pubDate': entry['published'],
-            # 'text': cleanhtml(entry['content'][1]['value']),
+            'url': entry['link'],
+            'publication_date': entry['published'],
             'text': cleanhtml(entry['summary']),
             'title': entry['title'],
-            # 'fullText': False
-            'fullText': True
+            'full_text': True,
+            'publication': 'Focus',
+            'language': 'de'
         }
-        # print(article)
+        if Article.get_by_url(article['url']) == None:
+            new_article = Article.add_article(article)
+            print(new_article)
+
         return(article)
 
     if source_code == 'es':
         article = {
-            # 'author': entry['author'],
             'author': author,
-            'link': entry['link'],
-            'pubDate': entry['published'],
-            # 'text': cleanhtml(entry['content'][1]['value']),
+            'url': entry['link'],
+            'publication_date': entry['published'],
             'text': cleanhtml(entry['summary']),
             'title': entry['title'],
-            # 'fullText': False
-            'fullText': True
+            'full_text': True,
+            'publication': 'El País',
+            'language': 'es'
         }
+        if Article.get_by_url(article['url']) == None:
+            new_article = Article.add_article(article)
+            print(new_article)
+
         return(article)
 
     if source_code == 'fr':
         article = {
-            # 'author': RSS_NEWS_SOURCES[source_code]['source'],
             'author': author,
-            'link': entry['link'],
-            'pubDate': entry['published'],
+            'url': entry['link'],
+            'publication_date': entry['published'],
             'text': cleanhtml(entry['summary']),
             'title': entry['title'],
-            'fullText': False
+            'full_text': False,
+            'publication': 'Le Monde',
+            'language': 'fr'
         }
+        if Article.get_by_url(article['url']) == None:
+            new_article = Article.add_article(article)
+            print(new_article)
+
         return(article)
 
     if source_code == 'it':
-        # print(entry)
-
         article = {
-            # 'author': RSS_NEWS_SOURCES[source_code]['source'],
-            # 'author': entry['author'],
             'author': author,
-            'link': entry['link'],
-            'pubDate': entry['published'],
-            # 'text': entry['summary'],
+            'url': entry['link'],
+            'publication_date': entry['published'],
             'text': cleanhtml(entry['summary']),
             'title': entry['title'],
-            # 'fullText': False
-            'fullText': True
+            'full_text': True,
+            'publication': 'ANSA.it',
+            'language': 'it'
         }
-        print(article)
+        if Article.get_by_url(article['url']) == None:
+            new_article = Article.add_article(article)
+            print(new_article)
+
         return(article)
 
     if source_code == 'sv':
         article = {
-            # 'author': entry['author'],
             'author': author,
-            'link': entry['link'],
-            'pubDate': entry['published'],
+            'url': entry['link'],
+            'publication_date': entry['published'],
             'text': cleanhtml(entry['content'][0]['value']),
             'title': entry['title'],
-            'fullText': True
+            'full_text': True,
+            'publication': 'Radio Sweden på lätt svenska',
+            'language': 'sv'
         }
+        if Article.get_by_url(article['url']) == None:
+            new_article = Article.add_article(article)
+            print(new_article)
+
         return(article)
 
     else:
