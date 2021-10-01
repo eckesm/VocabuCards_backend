@@ -816,7 +816,7 @@ def get_all_languages():
 
     languages = Language.get_all_options()
 
-    return jsonify(languages)
+    return jsonify({'languages': languages, 'news_sources': RSS_NEWS_SOURCES})
 
 # -------------------------------------------------------------------
 
