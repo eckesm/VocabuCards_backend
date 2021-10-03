@@ -107,7 +107,7 @@ class Article(db.Model):
         articles = cls.query.filter_by(language=source_code, active=True).all()
         count = len(articles)
         random_num = random.randint(0, count-1)
-        return articles[random_num].serialize()
+        return articles[random_num]
 
     @classmethod
     def get_all_by_language(cls, source_code):
@@ -156,6 +156,7 @@ class User(db.Model):
                            server_default=func.now())
     last_login = db.Column(db.DateTime, nullable=False,
                            server_default=func.now())
+    current_article = db.Column(db.Text, nullable=True)
     current_text = db.Column(db.Text, nullable=True)
     accessed_languages = db.Column(db.Text(), default='[]')
 

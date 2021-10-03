@@ -3,6 +3,8 @@ from datetime import datetime
 from flask import Flask, request, jsonify
 from flask_debugtoolbar import DebugToolbarExtension
 from flask_mail import Mail, Message
+from sqlalchemy.sql.elements import Null
+from sqlalchemy.sql.expression import null
 from stripe.api_resources import subscription
 # from stripe.api_resources import price
 from models import db, connect_db, Language, User, VocabWord, VocabWordComponent, Article
@@ -723,6 +725,7 @@ def get_user_start_information():
         response = {
             'account_override': user.account_override,
             'current_plan': user.current_plan,
+            'current_article': user.current_article,
             'current_text': user.current_text,
             'first_login': user.first_login,
             'is_email_confirmed': user.is_email_confirmed,
@@ -794,13 +797,16 @@ def save_input_text_by_api():
     user = User.get_by_id(current_user)
 
     text = request.json['text']
+    article_id = request.json['articleId']
     # current_text = user.update_current_text(text)
     user.current_text = text
+    user.current_article = article_id
     db.session.add(user)
     db.session.commit()
 
     response = {
         'text': user.current_text,
+        'article_id': user.current_article,
         'status': 'success'
     }
     return jsonify(response)
@@ -846,6 +852,7 @@ def update_users_last_language(source_code):
 
     # user.update_last_language(source_code)
     user.last_language = source_code
+    user.current_article = ''
     db.session.add(user)
     db.session.commit()
 
@@ -1146,8 +1153,17 @@ def get_news_article(source_code):
 @app.route('/articles/saved/random/<source_code>', methods=['GET'])
 @cross_origin()
 def get_random_saved_news_article(source_code):
-    article = Article.get_random_by_language(source_code)
+    article = Article.get_random_by_language(source_code).serialize()
     return(jsonify(article))
+# -------------------------------------------------------------------
+
+
+@app.route('/articles/saved/id/<id>', methods=['GET'])
+@cross_origin()
+def get_saved_news_article_by_id(id):
+    article = Article.get_by_id(id).serialize()
+    return(jsonify(article))
+
 
 # -------------------------------------------------------------------
 
