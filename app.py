@@ -38,16 +38,18 @@ app.config['GOOGLE_LANGUAGE_KEY'] = os.environ.get(
 app.config['WORDS_API_KEY'] = os.environ.get('WORDS_API_KEY')
 app.config['STRIPE_SECRET'] = os.environ.get('STRIPE_SECRET')
 
-app.config['STRIPE_ENDPOINT_SIGNING_SECRET'] = os.environ.get(
-    'STRIPE_ENDPOINT_SIGNING_SECRET')
-app.config['STRIPE_DEFAULT_PRICE_ID'] = os.environ.get(
-    'STRIPE_DEFAULT_PRICE_ID')
-app.config['STRIPE_WEEKLY_PLAN_PRICE_ID'] = os.environ.get(
-    'STRIPE_WEEKLY_PLAN_PRICE_ID')
-app.config['STRIPE_MONTHLY_PLAN_PRICE_ID'] = os.environ.get(
-    'STRIPE_MONTHLY_PLAN_PRICE_ID')
-app.config['STRIPE_ANNUALLY_PLAN_PRICE_ID'] = os.environ.get(
-    'STRIPE_ANNUALLY_PLAN_PRICE_ID')
+# app.config['STRIPE_ENDPOINT_SIGNING_SECRET'] = os.environ.get(
+#     'STRIPE_ENDPOINT_SIGNING_SECRET')
+# app.config['STRIPE_DEFAULT_PRICE_ID'] = os.environ.get(
+#     'STRIPE_DEFAULT_PRICE_ID')
+# app.config['STRIPE_WEEKLY_PLAN_PRICE_ID'] = os.environ.get(
+#     'STRIPE_WEEKLY_PLAN_PRICE_ID')
+# app.config['STRIPE_MONTHLY_PLAN_PRICE_ID'] = os.environ.get(
+#     'STRIPE_MONTHLY_PLAN_PRICE_ID')
+# app.config['STRIPE_ANNUALLY_PLAN_PRICE_ID'] = os.environ.get(
+#     'STRIPE_ANNUALLY_PLAN_PRICE_ID')
+# app.config['STRIPE_TRIAL_SUBSCRIPTION_DAYS'] = os.environ.get(
+#     'STRIPE_TRIAL_SUBSCRIPTION_DAYS')
 
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
 app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
@@ -59,6 +61,7 @@ app.config['REACT_PRODUCTION_DOMAIN'] = os.environ.get(
     'REACT_PRODUCTION_DOMAIN')
 
 react_app_url = app.config["REACT_PRODUCTION_DOMAIN"]
+# STRIPE_TRIAL_PERIOD = app.config["STRIPE_TRIAL_SUBSCRIPTION_DAYS"]
 
 cors = CORS(app)
 mail = Mail(app)
@@ -234,89 +237,73 @@ def test_access_token():
 # ---------------------- Stripe API Routes ------------------------ #
 #####################################################################
 
-@app.route('/test-stripe', methods=['GET'])
-@cross_origin()
-def test_stripe():
-    test = stripe_payments.test_Stripe_PaymentIntent()
-    return jsonify(test)
+# @app.route('/test-stripe', methods=['GET'])
+# @cross_origin()
+# def test_stripe():
+#     test = stripe_payments.test_Stripe_PaymentIntent()
+#     return jsonify(test)
 
 # -------------------------------------------------------------------
 
 
-@app.route('/create-checkout-session', methods=['POST'])
-@cross_origin()
-@jwt_required()
-def create_checkout_session_route():
+# @app.route('/create-checkout-session', methods=['POST'])
+# @cross_origin()
+# @jwt_required()
+# def create_checkout_session_route():
 
-    current_user = get_jwt_identity()
-    user = User.get_by_id(current_user)
-    price_id = request.json['price_id']
-    stripe_customer_id = request.json['stripe_customer_id']
+#     current_user = get_jwt_identity()
+#     user = User.get_by_id(current_user)
+#     price_id = request.json['price_id']
+#     stripe_customer_id = request.json['stripe_customer_id']
 
-    # if stripe_customer_id is None:
-    #     new_customer = stripe_payments.create_customer_by_api(
-    #         user.id, user.email_address, user.name)
-    #     customer_id = new_customer.id
-    # else:
-    #     customer_id = stripe_customer_id
+#     session = stripe_payments.create_checkout_session(
+#         price_id, user.id, stripe_customer_id, react_app_url)
 
-    # user.set_stripe_customer_id(customer_id)
-
-    session = stripe_payments.create_checkout_session(
-        price_id, user.id, stripe_customer_id, react_app_url)
-
-    return jsonify({'url': session.url})
+#     return jsonify({'url': session.url})
 
 # -------------------------------------------------------------------
 
 
-@app.route('/stripe-webhook', methods=['POST'])
-@cross_origin()
-def stripe_webhook_received():
-    payload = request.data
-    sig_header = request.headers['Stripe-Signature']
+# @app.route('/stripe-webhook', methods=['POST'])
+# @cross_origin()
+# def stripe_webhook_received():
+#     payload = request.data
+#     sig_header = request.headers['Stripe-Signature']
 
-    event = stripe_payments.create_event(payload, sig_header)
-    return event
+#     event = stripe_payments.create_event(payload, sig_header)
+#     return event
 
 # -------------------------------------------------------------------
 
 
-@app.route('/create-billing-portal-session', methods=['POST'])
-@cross_origin()
-@jwt_required()
-def create_billing_portal_session_route():
+# @app.route('/create-billing-portal-session', methods=['POST'])
+# @cross_origin()
+# @jwt_required()
+# def create_billing_portal_session_route():
 
-    stripe_customer_id = request.json['stripe_customer_id']
+#     stripe_customer_id = request.json['stripe_customer_id']
 
-    # if new_subscription:
-    #     new_subscription_object = stripe_payments.create_new_subscription_by_api(
-    #         stripe_customer_id)
-    #     user = User.get_by_stripe_customer_id(stripe_customer_id)
-    #     user.stripe_subscription_id = new_subscription_object.id
-    #     db.session.add(user)
-    #     db.session.commit()
+#     session = stripe_payments.create_billing_portal_session(
+#         stripe_customer_id, react_app_url)
 
-    session = stripe_payments.create_billing_portal_session(
-        stripe_customer_id, react_app_url)
+#     return jsonify({'url': session.url})
 
-    return jsonify({'url': session.url})
 # -------------------------------------------------------------------
 
 
-@app.route('/stripe-customer-id', methods=['GET'])
-@cross_origin()
-@jwt_required()
-def get_stripe_customer_id():
+# @app.route('/stripe-customer-id', methods=['GET'])
+# @cross_origin()
+# @jwt_required()
+# def get_stripe_customer_id():
 
-    current_user = get_jwt_identity()
-    user = User.get_by_id(current_user)
+#     current_user = get_jwt_identity()
+#     user = User.get_by_id(current_user)
 
-    response = {
-        'stripe_customer_id': user.stripe_customer_id
-    }
+#     response = {
+#         'stripe_customer_id': user.stripe_customer_id
+#     }
 
-    return jsonify(response)
+#     return jsonify(response)
 
 
 #####################################################################
@@ -365,47 +352,26 @@ def login_user_via_API():
             refresh_token = create_refresh_token(identity=user)
             user.update_last_login()
             if user.first_login == True:
-                # user.update_first_login()
                 user.first_login = False
                 db.session.add(user)
                 db.session.commit()
 
-            # UPGRADING EARLIER ACCOUNT SETTINGS
+            # # UPGRADING EARLIER ACCOUNT SETTINGS
 
-            if user.stripe_customer_id is None:
-                # Create Stripe customer ID
-                new_customer = stripe_payments.create_customer_by_api(
-                    user.id, user.email_address, user.name)
-                # user.set_stripe_customer_id(new_customer.id)
-                user.stripe_customer_id = new_customer.id
-                db.session.add(user)
-                db.session.commit()
+            # if user.stripe_customer_id is None:
+            #     new_customer = stripe_payments.create_customer_by_api(
+            #         user.id, user.email_address, user.name)
+            #     user.stripe_customer_id = new_customer.id
+            #     db.session.add(user)
+            #     db.session.commit()
 
-            # current_time = datetime.now()
-            # unix_timestamp = current_time.timestamp()
-            # unix_timestamp_plus_7_days = unix_timestamp + (7 * 24 * 60 * 60)
-
-            # if user.trial_end is None:
-            # user.set_trial_end(unix_timestamp_plus_7_days)
-
-            if user.stripe_subscription_id is None:
-                # Create Stripe trial subscription
-                new_subscription = stripe_payments.create_trial_subscription_by_api(
-                    user.stripe_customer_id, 7)
-                # user.set_stripe_subscription(
-                # new_subscription.id, "trial", "expiring", unix_timestamp_plus_7_days)
-                user.stripe_subscription_id = new_subscription.id
-                db.session.add(user)
-                db.session.commit()
-
-            # if user.current_plan is None:
-                # Set current_plan to trial
-                # user.set_stripe_subscription(
-                #     user.stripe_subscription_id, "trial", "expiring", unix_timestamp_plus_7_days)
-                # user.set_trial_end(unix_timestamp_plus_7_days)
-
-            # if user.subscription_status == "renewing" and user.stripe_payment_method is None:
-                # user.set_stripe_payment_method('payment_attached')
+            # if user.stripe_subscription_id is None:
+            #     # Create Stripe trial subscription
+            #     new_subscription = stripe_payments.create_trial_subscription_by_api(
+            #         user.stripe_customer_id, STRIPE_TRIAL_PERIOD)
+            #     user.stripe_subscription_id = new_subscription.id
+            #     db.session.add(user)
+            #     db.session.commit()
 
             response = {
                 'status': 'success',
@@ -445,7 +411,6 @@ def logout_user_via_API():
         user.update_last_login()
 
         if user.first_login == True:
-            # user.update_first_login()
             user.first_login = False
             db.session.add(user)
             db.session.commit()
@@ -481,30 +446,21 @@ def register_user_via_API():
                 'message': 'The entered passwords do not match.'}
             return jsonify(response)
 
-        current_time = datetime.now()
-        # unix_timestamp = current_time.timestamp()
-        # unix_timestamp_plus_7_days = unix_timestamp + (7 * 24 * 60 * 60)
+        # current_time = datetime.now()
 
         new_user = User.register(
-            # name, email_address, password, unix_timestamp_plus_7_days, source_code)
             name, email_address, password, source_code)
 
         if new_user:
             # Create Stripe customer ID
-            new_customer = stripe_payments.create_customer_by_api(
-                new_user.id, email_address, name)
-            # new_user.set_stripe_customer_id(new_customer.id)
-            new_user.stripe_customer_id = new_customer.id
+            # new_customer = stripe_payments.create_customer_by_api(
+            #     new_user.id, email_address, name)
+            # new_user.stripe_customer_id = new_customer.id
 
-            # Create Stripe trial subscription
-            # UNIX_Now = int(time.time())
-            # UNIX_Now=datetime.fromtimestamp()
-            # print('UNIX_Now', UNIX_Now)
-            new_subscription = stripe_payments.create_trial_subscription_by_api(
-                new_customer.id, 7)
-            # new_user.set_stripe_subscription(
-            # new_subscription.id, "trial", "expiring", unix_timestamp_plus_7_days)
-            new_user.stripe_subscription_id = new_subscription.id
+            # # Create Stripe trial subscription
+            # new_subscription = stripe_payments.create_trial_subscription_by_api(
+            #     new_customer.id, STRIPE_TRIAL_PERIOD)
+            # new_user.stripe_subscription_id = new_subscription.id
 
             db.session.add(new_user)
             db.session.commit()
@@ -656,101 +612,74 @@ def get_user_start_information():
     words = db.session.query(VocabWord).filter(
         VocabWord.owner_id == user.id, VocabWord.source_code == last_language).order_by(VocabWord.root).all()
 
-    current_time = datetime.now()
-    unix_timestamp = current_time.timestamp()
+    # current_time = datetime.now()
+    # unix_timestamp = current_time.timestamp()
 
-    subscription = stripe_payments.retrieve_subscription(
-        user.stripe_subscription_id)
-    # print(subscription)
+    # subscription_status = subscription.status
+    # payment_method = subscription.default_payment_method
+    # cancel_at_period_end = subscription.cancel_at_period_end
+    # canceled_at = subscription.canceled_at
+    # period_start = subscription.current_period_start
+    # period_end = subscription.current_period_end
+    # trial_start = subscription.trial_start
+    # trial_end = subscription.trial_end
+    # price_id = subscription.plan.id
+    # product_id = subscription.plan.product
+    # current_plan = stripe_payments.get_plan_name(price_id)
 
-    subscription_status = subscription.status
-    payment_method = subscription.default_payment_method
-    cancel_at_period_end = subscription.cancel_at_period_end
-    canceled_at = subscription.canceled_at
-    # ended_at = subscription.ended_at
-    period_start = subscription.current_period_start
-    period_end = subscription.current_period_end
-    trial_start = subscription.trial_start
-    trial_end = subscription.trial_end
-    price_id = subscription.plan.id
-    product_id = subscription.plan.product
 
-    current_plan = stripe_payments.get_plan_name(price_id)
+    # user.update_retrieved_stripe_subscription_information(
+    #     subscription_status, payment_method, period_start, period_end, trial_start, trial_end, price_id, product_id, current_plan)
 
-    # user.set_subscription_status(subscription.status)
-    # user.set_stripe_payment_method(subscription.default_payment_method)
-    # user.set_period_end(subscription.current_period_end)
+    # if (subscription_status != 'active' and subscription_status != 'trialing') and user.account_override is None:
 
-    user.update_retrieved_stripe_subscription_information(
-        subscription_status, payment_method, period_start, period_end, trial_start, trial_end, price_id, product_id, current_plan)
+    #     response = {
+    #         'account_override': user.account_override,
+    #         'current_plan': user.current_plan,
+    #         'first_login': user.first_login,
+    #         'is_email_confirmed': user.is_email_confirmed,
+    #         'languages': languages,
+    #         'last_login': user.last_login,
+    #         'last_source_code': last_language,
+    #         'name': user.name,
+    #         'stripe_cancel_at_period_end': cancel_at_period_end,
+    #         'stripe_canceled_at': canceled_at,
+    #         'stripe_customer_id': user.stripe_customer_id,
+    #         'stripe_payment_method': payment_method,
+    #         'stripe_period_end': period_end,
+    #         'stripe_period_start': period_start,
+    #         'subscription_status': subscription_status,
+    #         'trial_end': trial_end,
+    #         'trial_start': trial_start,
+    #         'user': user.email_address,
+    #     }
 
-    # print(float(unix_timestamp))
-    # print(float(user.stripe_period_end))
+    # else:
 
-    # if (float(unix_timestamp) > float(user.stripe_period_end)) and user.account_override is None:
-    if (subscription_status != 'active' and subscription_status != 'trialing') and user.account_override is None:
-
-        # user.set_subscription_status('expired')
-        response = {
-            'account_override': user.account_override,
-            'current_plan': user.current_plan,
-            # 'current_text': user.current_text,
-            'first_login': user.first_login,
-            'is_email_confirmed': user.is_email_confirmed,
-            'languages': languages,
-            'last_login': user.last_login,
-            'last_source_code': last_language,
-            'name': user.name,
-            # 'news_sources': RSS_NEWS_SOURCES,
-            'stripe_cancel_at_period_end': cancel_at_period_end,
-            'stripe_canceled_at': canceled_at,
-            'stripe_customer_id': user.stripe_customer_id,
-            # 'stripe_payment_method': user.stripe_payment_method,
-            'stripe_payment_method': payment_method,
-            # 'stripe_period_end': user.stripe_period_end,
-            'stripe_period_end': period_end,
-            # 'stripe_period_start': user.stripe_period_start,
-            'stripe_period_start': period_start,
-            # 'subscription_status': user.subscription_status,
-            'subscription_status': subscription_status,
-            # 'trial_end': user.trial_end,
-            'trial_end': trial_end,
-            'trial_start': trial_start,
-            'user': user.email_address,
-            # 'words_array': [word.serialize_and_components() for word in words]
-        }
-
-    else:
-
-        response = {
-            'account_override': user.account_override,
-            'current_plan': user.current_plan,
-            'current_article': user.current_article,
-            'current_text': user.current_text,
-            'first_login': user.first_login,
-            'is_email_confirmed': user.is_email_confirmed,
-            'languages': languages,
-            'last_login': user.last_login,
-            'last_source_code': last_language,
-            'name': user.name,
-            'news_sources': RSS_NEWS_SOURCES,
-            'stripe_cancel_at_period_end': cancel_at_period_end,
-            'stripe_canceled_at': canceled_at,
-            'stripe_customer_id': user.stripe_customer_id,
-            # 'stripe_payment_method': user.stripe_payment_method,
-            'stripe_payment_method': payment_method,
-            # 'stripe_period_end': user.stripe_period_end,
-            'stripe_period_end': period_end,
-            # 'stripe_period_start': user.stripe_period_start,
-            'stripe_period_start': period_start,
-            # 'subscription_status': user.subscription_status,
-            'subscription_status': subscription_status,
-            # 'trial_end': user.trial_end,
-            'trial_end': trial_end,
-            'trial_start': trial_start,
-            'user': user.email_address,
-            'words_array': [word.serialize_and_components() for word in words]
-        }
+    response = {
+        'account_override': user.account_override,
+        # 'current_plan': user.current_plan,
+        'current_article': user.current_article,
+        'current_text': user.current_text,
+        'first_login': user.first_login,
+        'is_email_confirmed': user.is_email_confirmed,
+        'languages': languages,
+        'last_login': user.last_login,
+        'last_source_code': last_language,
+        'name': user.name,
+        'news_sources': RSS_NEWS_SOURCES,
+        # 'stripe_cancel_at_period_end': cancel_at_period_end,
+        # 'stripe_canceled_at': canceled_at,
+        # 'stripe_customer_id': user.stripe_customer_id,
+        # 'stripe_payment_method': payment_method,
+        # 'stripe_period_end': period_end,
+        # 'stripe_period_start': period_start,
+        # 'subscription_status': subscription_status,
+        # 'trial_end': trial_end,
+        # 'trial_start': trial_start,
+        'user': user.email_address,
+        'words_array': [word.serialize_and_components() for word in words]
+    }
 
     return jsonify(response)
 
@@ -798,7 +727,6 @@ def save_input_text_by_api():
 
     text = request.json['text']
     article_id = request.json['articleId']
-    # current_text = user.update_current_text(text)
     user.current_text = text
     user.current_article = article_id
     db.session.add(user)
@@ -838,7 +766,6 @@ def update_users_last_language(source_code):
     accessed_languages = json.loads(user.accessed_languages)
 
     if user.last_language != source_code:
-        # user.update_current_text(None)
         user.current_text = None
         db.session.add(user)
         db.session.commit()
@@ -850,7 +777,6 @@ def update_users_last_language(source_code):
         create_all_language_starters(
             user.id, source_code)
 
-    # user.update_last_language(source_code)
     user.last_language = source_code
     user.current_article = ''
     db.session.add(user)
@@ -865,7 +791,7 @@ def update_users_last_language(source_code):
 
 @app.route('/translate/<word>/<source_code>/<translate_code>', methods=['GET'])
 @cross_origin()
-@jwt_required()
+# @jwt_required()
 def translate(word, source_code, translate_code):
 
     if len(word) > 150:
@@ -880,7 +806,7 @@ def translate(word, source_code, translate_code):
 
 
 @app.route('/dictionary/<word>', methods=['GET'])
-@jwt_required()
+# @jwt_required()
 def search_dictionary(word):
 
     word = DictionaryWord(word)
